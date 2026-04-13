@@ -1,0 +1,72 @@
+# =============================================================================
+# CV Data - Spanish (YAML for WeasyPrint)
+# =============================================================================
+# PURPOSE: Spanish CV data for server-side PDF generation
+# =============================================================================
+
+personal:
+  name: "Lluís Noval"
+  title: "Estudiante ASIX"
+  email: "llnovaljuanola@gmail.com"
+  phone: "683 25 00 79"
+  location: "Cataluña"
+  linkedin: "linkedin.com/in/lluís-noval-juanola-11a788353"
+  github: "github.com/confusedyeti03"
+  website: "lnoval.dev"
+  summary: "Estudiante de Administración de Sistemas Informáticos en Red con pasión por la tecnología. Actualmente en formación, con conocimientos en redes y sistemas operativos. Motivación por aprender. Capacidad de trabajo en equipo y resolución de problemas."
+
+experience:
+  - company: "CFA Maria Verdaguer"
+    position: "Prácticas"
+    period: "Noviembre 2023 - Marzo 2024"
+    location: "Cataluña"
+    achievements:
+      - "Mantenimiento de software"
+      - "Instalación de sistemas operativos"
+      - "Reparación de PC"
+      - "Instalación de software"
+  - company: "Second Option Trgovina"
+    position: "Erasmus"
+    period: "2 Junio 2023 - 28 Junio 2023"
+    location: "Eslovenia"
+    achievements:
+      - "Mantenimiento de software"
+      - "Instalación de sistemas operativos"
+
+education:
+  - degree: "Administración de Sistemas y Redes"
+    institution: "Institut iTIC"
+    period: "2024 - Actual"
+    location: "Cataluña"
+  - degree: "Sistemas Microinformáticos y Redes"
+    institution: "Institut Cendrassos"
+    period: "Septiembre 2022 - Mayo 2024"
+    location: "Cataluña"
+
+skills:
+  technical:
+    - "Redes"
+    - "Sistemas operativos"
+    - "BBDD"
+    - "IT"
+  personal:
+    - "Adaptación ágil"
+    - "Resolución de incidencias"
+
+certifications:
+  - name: "Cambridge B2 First"
+    issuer: "Cambridge Assessment"
+    date: ""
+  - name: "DELF B2"
+    issuer: "Alliance Française"
+    date: ""
+
+languages:
+  - name: "Catalán"
+    level: "Nativo"
+  - name: "Castellano"
+    level: "Nativo"
+  - name: "Inglés"
+    level: "Nivel Profesional"
+  - name: "Francés"
+    level: "Nivel Profesional"

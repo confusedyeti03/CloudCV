@@ -1,0 +1,24 @@
+# =============================================================================
+# Role: nginx - Handlers
+# =============================================================================
+# Purpose: Manage Nginx restarts and reloads
+# =============================================================================
+---
+# Fully restart Nginx
+- name: restart nginx
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+
+# Validate Nginx configuration before applying changes
+- name: test nginx config
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+# Reload Nginx without stopping active connections
+- name: reload nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+  listen: reload nginx
+  notify: test nginx config

@@ -1,0 +1,72 @@
+# =============================================================================
+# CV Data - English (YAML for WeasyPrint)
+# =============================================================================
+# PURPOSE: English CV data for server-side PDF generation
+# =============================================================================
+
+personal:
+  name: "Lluís Noval"
+  title: "ASIX Student"
+  email: "llnovaljuanola@gmail.com"
+  phone: "683 25 00 79"
+  location: "Catalonia"
+  linkedin: "linkedin.com/in/lluís-noval-juanola-11a788353"
+  github: "github.com/confusedyeti03"
+  website: "lnoval.dev"
+  summary: "Networked Computer Systems Administration student with a passion for technology. Currently in training, with knowledge of networks and operating systems. Motivation to learn. Teamwork and problem-solving skills."
+
+experience:
+  - company: "CFA Maria Verdaguer"
+    position: "Internship"
+    period: "November 2023 - March 2024"
+    location: "Catalonia"
+    achievements:
+      - "Software maintenance"
+      - "Operating systems installation"
+      - "PC repair"
+      - "Software installation"
+  - company: "Second Option Trgovina"
+    position: "Erasmus Exchange"
+    period: "2 June 2023 - 28 June 2023"
+    location: "Slovenia"
+    achievements:
+      - "Software maintenance"
+      - "Operating systems installation"
+
+education:
+  - degree: "Network and Systems Administration"
+    institution: "Institut iTIC"
+    period: "2024 - Present"
+    location: "Catalonia"
+  - degree: "Microcomputer Systems and Networks"
+    institution: "Institut Cendrassos"
+    period: "September 2022 - May 2024"
+    location: "Catalonia"
+
+skills:
+  technical:
+    - "Networks"
+    - "Operating systems"
+    - "Databases"
+    - "IT"
+  personal:
+    - "Agile adaptation"
+    - "Incident resolution"
+
+certifications:
+  - name: "Cambridge B2 First"
+    issuer: "Cambridge Assessment"
+    date: ""
+  - name: "DELF B2"
+    issuer: "Alliance Française"
+    date: ""
+
+languages:
+  - name: "Catalan"
+    level: "Native"
+  - name: "Spanish"
+    level: "Native"
+  - name: "English"
+    level: "Professional Level"
+  - name: "French"
+    level: "Professional Level"

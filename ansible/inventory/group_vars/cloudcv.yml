@@ -1,0 +1,44 @@
+# =============================================================================
+# CloudCV Group Variables
+# =============================================================================
+# Purpose: Variables specific to the cloudcv group
+#
+# These variables override those from all.yml for the cloudcv group
+# and are accessible from any role.
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# PORTS: Service port configuration
+# -----------------------------------------------------------------------------
+
+# Non-standard SSH port (security through obscurity)
+ssh_port: 2222
+
+# Web ports
+nginx_port: 80
+nginx_ssl_port: 443
+
+# FastAPI API port (local only, Nginx proxies)
+api_port: 8000
+
+# -----------------------------------------------------------------------------
+# UFW: Ports allowed in firewall
+# -----------------------------------------------------------------------------
+
+ufw_allowed_ports:
+  - "{{ ssh_port }}/tcp"      # SSH
+  - "{{ nginx_port }}/tcp"    # HTTP (for Let's Encrypt ACME challenges)
+  - "{{ nginx_ssl_port }}/tcp" # HTTPS
+
+# -----------------------------------------------------------------------------
+# FAIL2BAN: Brute force protection configuration
+# -----------------------------------------------------------------------------
+
+# Maximum attempts before ban
+fail2ban_maxretry: 3
+
+# Ban time in seconds (1 hour)
+fail2ban_bantime: 3600
+
+# Time window to detect attempts (10 minutes)
+fail2ban_findtime: 600

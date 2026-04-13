@@ -1,0 +1,8 @@
+# Security contact information
+# See https://securitytxt.org/ for more information
+
+Contact: https://lnoval.dev/
+Contact: https://github.com/confusedyeti03
+Preferred-Languages: ca, es, en
+Canonical: https://lnoval.dev/.well-known/security.txt
+Expires: 2027-04-04T00:00:00.000Z

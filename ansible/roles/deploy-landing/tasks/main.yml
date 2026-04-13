@@ -1,0 +1,114 @@
+# =============================================================================
+# Role: deploy-landing - Static Content Deployment
+# =============================================================================
+# Purpose: Deploy static content from web/ to the server
+# Target: /var/www/cloudcv
+# Owner: www-data:www-data
+#
+# Deployed content:
+# - index.html (landing page)
+# - cv/ (multilingual CV)
+# - portfolio/ (AWS projects)
+# - styles/, scripts/, assets/
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# DIRECTORY: Create web structure
+# -----------------------------------------------------------------------------
+
+# Create web root directory if it doesn't exist
+- name: Create web root directory
+  ansible.builtin.file:
+    path: /var/www/cloudcv
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+  tags: [deploy, landing, web]
+
+# -----------------------------------------------------------------------------
+# SYNC: Copy static files with rsync
+# -----------------------------------------------------------------------------
+
+# Synchronize files with rsync from local directory
+# delete: true removes files at destination that don't exist at source
+- name: Synchronize static web content
+  ansible.builtin.synchronize:
+    src: "{{ playbook_dir }}/../web/"
+    dest: /var/www/cloudcv/
+    recursive: true
+    delete: true
+    rsync_opts:
+      - "--exclude=.git"
+      - "--exclude=node_modules"
+      - "--exclude=.DS_Store"
+      - "--exclude=*.md"
+  notify: reload nginx
+  tags: [deploy, landing, web]
+
+# -----------------------------------------------------------------------------
+# PERMISSIONS: Ensure correct owner and mode
+# -----------------------------------------------------------------------------
+
+# Ensure owner and group for all content
+- name: Ensure ownership for all web content
+  ansible.builtin.file:
+    path: /var/www/cloudcv
+    owner: www-data
+    group: www-data
+    recurse: true
+  tags: [deploy, landing, web]
+
+# Find directories to apply 0755 permissions
+- name: Find web directories
+  ansible.builtin.find:
+    paths: /var/www/cloudcv
+    file_type: directory
+  register: web_directories
+  tags: [deploy, landing, web]
+
+# Apply correct permissions to directories (0755 to navigate)
+- name: Set directory permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: '0755'
+  loop: "{{ web_directories.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  tags: [deploy, landing, web]
+
+# Find files to apply 0644 permissions
+- name: Find web files
+  ansible.builtin.find:
+    paths: /var/www/cloudcv
+    file_type: file
+  register: web_files
+  tags: [deploy, landing, web]
+
+# Apply correct permissions to files (0644 for reading)
+- name: Set file permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    mode: '0644'
+  loop: "{{ web_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  tags: [deploy, landing, web]
+
+# -----------------------------------------------------------------------------
+# VALIDATION: Verify correct deployment
+# -----------------------------------------------------------------------------
+
+# Check that index.html exists
+- name: Verify index.html exists
+  ansible.builtin.stat:
+    path: /var/www/cloudcv/index.html
+  register: index_stat
+  failed_when: not index_stat.stat.exists
+  tags: [deploy, landing, web, verify]
+
+# Display confirmation message
+- name: Display deployment status
+  ansible.builtin.debug:
+    msg: "OK: Landing page deployed successfully to /var/www/cloudcv"
+  tags: [deploy, landing, web]

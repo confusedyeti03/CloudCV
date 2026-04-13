@@ -1,0 +1,158 @@
+# =============================================================================
+# Role: deploy-cv - Deploy FastAPI Service
+# =============================================================================
+# Purpose: Deploy the cv-service (FastAPI) to the server
+# Target: /opt/cv-service
+# Port: 8000 (proxied via Nginx /api/)
+#
+# Components:
+# - FastAPI app (app.py)
+# - SQLite database (data/visits.db)
+# - WeasyPrint for server-side PDF
+# - Python virtualenv
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# DEPENDENCIES: System libraries for WeasyPrint
+# -----------------------------------------------------------------------------
+
+# WeasyPrint needs GTK/Pango libraries to render HTML to PDF
+- name: Install WeasyPrint system dependencies
+  ansible.builtin.apt:
+    name:
+      - libpango-1.0-0
+      - libpangocairo-1.0-0
+      - libgdk-pixbuf-2.0-0
+      - libffi-dev
+      - shared-mime-info
+    state: present
+  tags: [deploy, cv, api]
+
+# -----------------------------------------------------------------------------
+# DIRECTORY: Service structure
+# -----------------------------------------------------------------------------
+
+# Create main service directory
+- name: Ensure cv-service directory exists
+  ansible.builtin.file:
+    path: "{{ cv_service_path }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+  tags: [deploy, cv, api]
+
+# -----------------------------------------------------------------------------
+# SYNC: Copy service code
+# -----------------------------------------------------------------------------
+
+# Synchronize files with rsync, excluding venv and cache
+- name: Sync cv-service files
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../cv-service/"
+    dest: "{{ cv_service_path }}/"
+    recursive: true
+    rsync_opts:
+      - "--exclude=__pycache__"
+      - "--exclude=*.pyc"
+      - "--exclude=.venv"
+      - "--exclude=venv"
+      - "--exclude=data/"
+      - "--exclude=.git"
+  notify: restart cv-service
+  tags: [deploy, cv, api]
+
+# Create directory for SQLite database
+# Mode 0750 for security (only www-data can access)
+- name: Create data directory for SQLite
+  ansible.builtin.file:
+    path: "{{ cv_service_path }}/data"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0750"
+  tags: [deploy, cv, api]
+
+# Create directory for cached PDFs
+# Mode 0750 for security (only www-data can access)
+- name: Create generated directory for cached PDFs
+  ansible.builtin.file:
+    path: "{{ cv_service_path }}/generated"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0750"
+  tags: [deploy, cv, api]
+
+# -----------------------------------------------------------------------------
+# PYTHON: Virtual environment and dependencies
+# -----------------------------------------------------------------------------
+
+# Create Python virtualenv to isolate dependencies
+- name: Create Python virtual environment
+  ansible.builtin.command:
+    cmd: "python3 -m venv {{ cv_service_path }}/venv"
+    creates: "{{ cv_service_path }}/venv/bin/activate"
+  tags: [deploy, cv, api]
+
+# Install Python dependencies (FastAPI, uvicorn, WeasyPrint, etc.)
+- name: Install Python dependencies in venv
+  ansible.builtin.pip:
+    requirements: "{{ cv_service_path }}/requirements.txt"
+    virtualenv: "{{ cv_service_path }}/venv"
+    extra_args: "--upgrade"
+  tags: [deploy, cv, api]
+
+# -----------------------------------------------------------------------------
+# SYSTEMD: System service
+# -----------------------------------------------------------------------------
+
+# Install systemd unit to manage the service
+# MemoryMax=300M is important for t4g.nano (512MB RAM + 1GB swap)
+- name: Install cv-service systemd unit
+  ansible.builtin.template:
+    src: cv-service.service.j2
+    dest: /etc/systemd/system/cv-service.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart cv-service
+  tags: [deploy, cv, api]
+
+# Enable and start the service
+- name: Ensure cv-service is enabled and running
+  ansible.builtin.systemd:
+    name: cv-service
+    enabled: true
+    state: started
+  tags: [deploy, cv, api]
+
+# -----------------------------------------------------------------------------
+# VALIDATION: Verify service is running
+# -----------------------------------------------------------------------------
+
+# Wait for the service to be listening on the port
+- name: Wait for cv-service to be ready
+  ansible.builtin.wait_for:
+    port: "{{ cv_service_port }}"
+    host: "{{ cv_service_host }}"
+    delay: 2
+    timeout: 30
+  tags: [deploy, cv, api, verify]
+
+# Verify API health check
+- name: Verify cv-service health
+  ansible.builtin.uri:
+    url: "http://{{ cv_service_host }}:{{ cv_service_port }}/health"
+    return_content: yes
+  register: health_check
+  failed_when: "'healthy' not in health_check.content"
+  tags: [deploy, cv, api, verify]
+
+# Display service status
+- name: Display cv-service status
+  ansible.builtin.debug:
+    msg: "OK: cv-service running correctly: {{ health_check.json }}"
+  tags: [deploy, cv, api]

@@ -1,0 +1,17 @@
+# =============================================================================
+# Role: anubis - Handlers
+# =============================================================================
+# Purpose: Manage Anubis WAF service restarts
+# =============================================================================
+---
+# Restart Anubis when configuration or binary changes
+- name: restart anubis
+  ansible.builtin.service:
+    name: anubis
+    state: restarted
+
+# Reload configuration without stopping (if supported)
+- name: reload anubis
+  ansible.builtin.service:
+    name: anubis
+    state: reloaded

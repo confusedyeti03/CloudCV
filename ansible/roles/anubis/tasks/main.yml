@@ -1,0 +1,170 @@
+# =============================================================================
+# Role: anubis - Proof-of-Work WAF
+# =============================================================================
+# Purpose: Install and configure Anubis WAF with PoW challenge
+#
+# WHAT IS ANUBIS?
+# Anubis is a WAF (Web Application Firewall) that uses Proof-of-Work
+# to verify that visitors are humans. When a client accesses the site,
+# they must solve a cryptographic puzzle before accessing the content.
+# This reduces bots and scrapers without affecting real users.
+#
+# ARCHITECTURE:
+#   Client -> Anubis:8923 (PoW challenge) -> Backend:8080
+#
+# NOTE: This role is OPTIONAL and for learning purposes.
+# If it causes problems, use --skip-tags "anubis" and rely on Cloudflare Bot Fight Mode.
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# USER: Create system user for security
+# -----------------------------------------------------------------------------
+
+# Create a no-login user to run the service securely
+- name: Create Anubis system user
+  ansible.builtin.user:
+    name: anubis
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+  tags: [anubis, waf]
+
+# -----------------------------------------------------------------------------
+# DIRECTORY: Configuration structure
+# -----------------------------------------------------------------------------
+
+# Directory to store Anubis configuration
+- name: Create Anubis config directory
+  ansible.builtin.file:
+    path: /etc/anubis
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [anubis, waf]
+
+# Temporary directory for download
+- name: Create temp directory for Anubis download
+  ansible.builtin.file:
+    path: "/tmp/anubis-{{ anubis_version }}"
+    state: directory
+    mode: "0755"
+  tags: [anubis, waf]
+
+# -----------------------------------------------------------------------------
+# DOWNLOAD: Obtain Anubis binary
+# -----------------------------------------------------------------------------
+
+# Block with rescue to avoid breaking the playbook on failure
+- name: Download and install Anubis (linux-arm64)
+  block:
+    # Download tarball from GitHub releases
+    - name: Download Anubis tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/TecharoHQ/anubis/releases/download/v{{ anubis_version }}/anubis-{{ anubis_version }}-linux-arm64.tar.gz"
+        dest: "/tmp/anubis-{{ anubis_version }}.tar.gz"
+        mode: "0644"
+        timeout: 60
+      tags: [anubis, waf]
+
+    # Extract tarball contents
+    - name: Extract Anubis tarball
+      ansible.builtin.unarchive:
+        src: "/tmp/anubis-{{ anubis_version }}.tar.gz"
+        dest: "/tmp/anubis-{{ anubis_version }}"
+        remote_src: true
+        extra_opts:
+          - --strip-components=1
+      tags: [anubis, waf]
+
+    # Copy binary to /usr/local/bin
+    - name: Install Anubis binary
+      ansible.builtin.copy:
+        src: "/tmp/anubis-{{ anubis_version }}/anubis"
+        dest: /usr/local/bin/anubis
+        mode: "0755"
+        owner: root
+        group: root
+        remote_src: true
+      tags: [anubis, waf]
+
+    # Mark as successfully installed
+    - name: Mark Anubis as installed
+      ansible.builtin.set_fact:
+        anubis_installed: true
+      tags: [anubis, waf]
+
+  rescue:
+    # If it fails, warn but don't break the playbook
+    - name: Warn that Anubis download failed
+      ansible.builtin.debug:
+        msg: |
+          WARNING: Could not download Anubis v{{ anubis_version }}.
+          The playbook continues without Anubis.
+          You can try manually or rely on Cloudflare Bot Fight Mode.
+      tags: [anubis, waf]
+
+    # Mark as not installed
+    - name: Mark Anubis as not installed
+      ansible.builtin.set_fact:
+        anubis_installed: false
+      tags: [anubis, waf]
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION: Templates for config and systemd
+# -----------------------------------------------------------------------------
+
+# Create YAML configuration file
+# PoW difficulty controls how much CPU the client must spend
+- name: Create Anubis configuration
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: /etc/anubis/config.yml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart anubis
+  when: anubis_installed | default(false)
+  tags: [anubis, waf]
+
+# Create systemd service with memory limit
+- name: Create Anubis systemd service
+  ansible.builtin.template:
+    src: anubis.service.j2
+    dest: /etc/systemd/system/anubis.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart anubis
+  when: anubis_installed | default(false)
+  tags: [anubis, waf]
+
+# -----------------------------------------------------------------------------
+# SERVICE: Enable and start Anubis
+# -----------------------------------------------------------------------------
+
+# Reload systemd to detect the new service
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: anubis_installed | default(false)
+  tags: [anubis, waf]
+
+# Enable and start the Anubis service
+- name: Ensure Anubis is enabled and running
+  ansible.builtin.service:
+    name: anubis
+    state: started
+    enabled: true
+  when: anubis_installed | default(false)
+  tags: [anubis, waf]
+
+# -----------------------------------------------------------------------------
+# VALIDATION: Verify service status
+# -----------------------------------------------------------------------------
+
+# Display final status
+- name: Display Anubis status
+  ansible.builtin.debug:
+    msg: "{{ 'OK: Anubis WAF installed and active' if (anubis_installed | default(false)) else 'WARNING: Anubis not installed - relying on Cloudflare' }}"
+  tags: [anubis, waf]

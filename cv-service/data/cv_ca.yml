@@ -1,0 +1,72 @@
+# =============================================================================
+# CV Data - Catalan (YAML for WeasyPrint)
+# =============================================================================
+# PURPOSE: Catalan CV data for server-side PDF generation
+# =============================================================================
+
+personal:
+  name: "Lluís Noval"
+  title: "Estudiant ASIX"
+  email: "llnovaljuanola@gmail.com"
+  phone: "683 25 00 79"
+  location: "Catalunya"
+  linkedin: "linkedin.com/in/lluís-noval-juanola-11a788353"
+  github: "github.com/confusedyeti03"
+  website: "lnoval.dev"
+  summary: "Estudiant d'Administració de Sistemes Informàtics en Xarxa amb passió per la tecnologia. Actualment en formació, amb coneixements en xarxes, sistemes operatius. Motivació per aprendre. Capacitat de treball en equip i resolució de problemes."
+
+experience:
+  - company: "CFA Maria Verdaguer"
+    position: "Pràctiques"
+    period: "Novembre 2023 - Març 2024"
+    location: "Catalunya"
+    achievements:
+      - "Manteniment de programari"
+      - "Instal·lació de sistemes operatius"
+      - "Reparació de PC"
+      - "Instal·lació de programari"
+  - company: "Second Option Trgovina"
+    position: "Erasmus"
+    period: "2 Juny 2023 - 28 Juny 2023"
+    location: "Eslovènia"
+    achievements:
+      - "Manteniment de programari"
+      - "Instal·lació de sistemes operatius"
+
+education:
+  - degree: "Administració de Sistemes i Xarxes"
+    institution: "Institut iTIC"
+    period: "2024 - Actual"
+    location: "Catalunya"
+  - degree: "Sistemes Microinformàtics i Xarxes"
+    institution: "Institut Cendrassos"
+    period: "Setembre 2022 - Maig 2024"
+    location: "Catalunya"
+
+skills:
+  technical:
+    - "Xarxes"
+    - "Sistemes operatius"
+    - "BBDD"
+    - "IT"
+  personal:
+    - "Adaptació àgil"
+    - "Resolució d'incidències"
+
+certifications:
+  - name: "Cambridge B2 First"
+    issuer: "Cambridge Assessment"
+    date: ""
+  - name: "DELF B2"
+    issuer: "Alliance Française"
+    date: ""
+
+languages:
+  - name: "Català"
+    level: "Natiu"
+  - name: "Castellà"
+    level: "Natiu"
+  - name: "Anglès"
+    level: "Nivell Professional"
+  - name: "Francès"
+    level: "Nivell Professional"

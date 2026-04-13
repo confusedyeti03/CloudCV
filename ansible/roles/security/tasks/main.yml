@@ -1,0 +1,134 @@
+# =============================================================================
+# Role: security - SSH Hardening, UFW, Fail2ban
+# =============================================================================
+# Purpose: Configure server security
+#
+# Components:
+# 1. SSH Hardening:
+#    - Change SSH port to 2222 (non-standard)
+#    - Disable PermitRootLogin
+#    - Disable PasswordAuthentication (key-only)
+#    - Enable PubkeyAuthentication
+#
+# 2. UFW Firewall:
+#    - Default deny incoming
+#    - Allow outgoing
+#    - Allow ports: 2222 (SSH), 80 (HTTP), 443 (HTTPS)
+#
+# 3. Fail2ban:
+#    - Protect SSH with max 5 attempts
+#    - Ban time: 1 hour
+# =============================================================================
+---
+# =============================================================================
+# SSH Hardening
+# =============================================================================
+
+# Backup current SSH config to ensure rollback possibility
+- name: Backup current SSH config
+  ansible.builtin.copy:
+    src: /etc/ssh/sshd_config
+    dest: /etc/ssh/sshd_config.backup
+    remote_src: true
+    mode: "0644"
+  tags: [security, ssh]
+
+# Install secure SSH configuration (port 2222, keys only, no root)
+- name: Install secure SSH configuration
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+  notify:
+    - validate sshd config
+  tags: [security, ssh]
+
+# =============================================================================
+# UFW Firewall
+# =============================================================================
+
+# Install UFW firewall to control incoming traffic
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+    update_cache: true
+  tags: [security, ufw]
+
+# Set default UFW policy (deny incoming, allow outgoing)
+- name: Set UFW default policy (deny incoming)
+  ansible.builtin.ufw:
+    direction: incoming
+    policy: deny
+  tags: [security, ufw]
+
+# Allow outgoing traffic (required for updates and services)
+- name: Set UFW default policy (allow outgoing)
+  ansible.builtin.ufw:
+    direction: outgoing
+    policy: allow
+  tags: [security, ufw]
+
+# CRITICAL: Allow SSH on port 2222 BEFORE enabling UFW to prevent lockout
+- name: Allow SSH on port 2222 before enabling UFW
+  ansible.builtin.ufw:
+    rule: allow
+    port: "2222"
+    proto: tcp
+  tags: [security, ufw]
+
+# Allow HTTP traffic for web server
+- name: Allow HTTP (80)
+  ansible.builtin.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+  tags: [security, ufw]
+
+# Allow HTTPS traffic for secure connections
+- name: Allow HTTPS (443)
+  ansible.builtin.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+  tags: [security, ufw]
+
+# Enable UFW (only after SSH port is allowed)
+- name: Enable UFW
+  ansible.builtin.ufw:
+    state: enabled
+  tags: [security, ufw]
+
+# =============================================================================
+# Fail2ban
+# =============================================================================
+
+# Install fail2ban to protect against brute force attacks
+- name: Install Fail2ban
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+  tags: [security, fail2ban]
+
+# Configure fail2ban jail for SSH on port 2222
+- name: Configure Fail2ban jail
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - restart fail2ban
+  tags: [security, fail2ban]
+
+# Ensure fail2ban is enabled and running
+- name: Ensure Fail2ban is enabled
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+  tags: [security, fail2ban]

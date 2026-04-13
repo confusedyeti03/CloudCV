@@ -1,0 +1,160 @@
+# =============================================================================
+# Role: nginx - Web Server & Reverse Proxy
+# =============================================================================
+# Purpose: Install and configure Nginx as web server and proxy
+#
+# Architecture:
+#   Internet -> Let's Encrypt SSL -> Nginx:443 -> Static content
+#                                              -> /api/* -> FastAPI:8000
+#
+# Features:
+# - HTTPS with Let's Encrypt certificates
+# - Rate limiting per zones (general, api)
+# - Cache for static assets
+# - Security headers (HSTS, CSP, etc.)
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# INSTALLATION: Nginx from apt
+# -----------------------------------------------------------------------------
+
+- name: Install Nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# DIRECTORIES: Web structure
+# -----------------------------------------------------------------------------
+
+- name: Ensure web root exists
+  ansible.builtin.file:
+    path: "{{ nginx_web_root }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+  tags: [nginx, web]
+
+- name: Ensure ACME challenge directory exists
+  ansible.builtin.file:
+    path: /var/www/html/.well-known/acme-challenge
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# CLEANUP: Remove default configuration
+# -----------------------------------------------------------------------------
+
+- name: Remove default site (enabled)
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  tags: [nginx, web]
+
+- name: Remove default site (available)
+  ansible.builtin.file:
+    path: /etc/nginx/sites-available/default
+    state: absent
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION: Nginx templates
+# -----------------------------------------------------------------------------
+
+- name: Configure main nginx.conf
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "nginx -t -c %s"
+  notify: reload nginx
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# SSL CERTIFICATE CHECK
+# -----------------------------------------------------------------------------
+
+- name: Check if SSL certificate exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ nginx_domain }}/fullchain.pem"
+  register: ssl_cert
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# BOOTSTRAP CONFIG (pre-SSL)
+# -----------------------------------------------------------------------------
+
+- name: Deploy bootstrap config (HTTP only, pre-SSL)
+  ansible.builtin.template:
+    src: cloudcv-bootstrap.conf.j2
+    dest: /etc/nginx/sites-available/cloudcv.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ssl_cert.stat.exists
+  notify: reload nginx
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# FULL SSL CONFIG (post-SSL)
+# -----------------------------------------------------------------------------
+
+- name: Deploy full SSL config
+  ansible.builtin.template:
+    src: cloudcv.conf.j2
+    dest: /etc/nginx/sites-available/cloudcv.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: ssl_cert.stat.exists
+  notify: reload nginx
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# ENABLE SITE
+# -----------------------------------------------------------------------------
+
+- name: Enable CloudCV site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/cloudcv.conf
+    dest: /etc/nginx/sites-enabled/cloudcv.conf
+    state: link
+  notify: reload nginx
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# SERVICE: Enable Nginx
+# -----------------------------------------------------------------------------
+
+- name: Ensure nginx service is running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
+  tags: [nginx, web]
+
+# -----------------------------------------------------------------------------
+# VALIDATION: Verify configuration
+# -----------------------------------------------------------------------------
+
+- name: Verify nginx is responding
+  ansible.builtin.uri:
+    url: "http://127.0.0.1/"
+    status_code: [200, 301, 302, 404]
+  register: nginx_check
+  failed_when: false
+  changed_when: false
+  tags: [nginx, web, verify]
+
+- name: Display nginx status
+  ansible.builtin.debug:
+    msg: "Nginx configured (SSL: {{ 'YES' if ssl_cert.stat.exists else 'NO - run certbot' }}, status: {{ nginx_check.status | default('N/A') }})"
+  tags: [nginx, web]

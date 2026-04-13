@@ -1,0 +1,41 @@
+# =============================================================================
+# CloudCV FastAPI Service - Systemd Unit
+# =============================================================================
+# Purpose: Manage the cv-service (FastAPI)
+# Port: {{ cv_service_port }}
+# Path: {{ cv_service_path }}
+# =============================================================================
+
+[Unit]
+Description=CloudCV FastAPI Service
+Documentation=https://github.com/lnoval/CloudCV
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory={{ cv_service_path }}
+
+# Add venv to PATH to use isolated Python
+Environment="PATH={{ cv_service_path }}/venv/bin"
+
+# Uvicorn serves the FastAPI app
+ExecStart={{ cv_service_path }}/venv/bin/uvicorn app:app --host {{ cv_service_host }} --port {{ cv_service_port }}
+
+# Auto-restart if the service crashes
+Restart=always
+RestartSec=5
+
+# Limit memory for t4g.nano (512MB RAM + 1GB swap)
+# 300M is sufficient for FastAPI + WeasyPrint
+MemoryMax=300M
+
+# Security protections
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ cv_service_path }}/data {{ cv_service_path }}/generated
+
+[Install]
+WantedBy=multi-user.target

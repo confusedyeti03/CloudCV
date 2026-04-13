@@ -1,0 +1,43 @@
+{
+  "projects": [
+    {
+      "id": "18",
+      "title": "Repte 18 — Aplicació serverless amb autenticació i autorització completa",
+      "description": "API REST serverless amb API Gateway, Lambda (Python), i DynamoDB. Autenticació amb Cognito i desplegament amb Terraform.",
+      "categories": ["serverless", "api"],
+      "technologies": ["AWS Lambda", "API Gateway", "DynamoDB", "Cognito", "Terraform", "Python"],
+      "github": "https://github.com/confusedyeti03/ReptesAWS/tree/main/Repte18",
+      "highlights": [
+        "99.9% uptime amb Lambda",
+        "Cost <$1/mes per 10K requests",
+        "Autoscaling automàtic sense gestió"
+      ]
+    },
+    {
+      "id": "38",
+      "title": "Repte 38 — Desplegament de MediaWiki/Wiki.js a EKS amb cerca avançada (OpenSearch)",
+      "description": "Cluster Kubernetes (EKS) amb estratègia de deploy canary. Ingress NGINX, Prometheus + Grafana per observabilitat.",
+      "categories": ["kubernetes", "cicd"],
+      "technologies": ["EKS", "Kubernetes", "Helm", "Prometheus", "Grafana", "Terraform"],
+      "github": "https://github.com/confusedyeti03/ReptesAWS/tree/main/Repte38",
+      "highlights": [
+        "Zero-downtime deployments",
+        "Rollback automàtic si error rate >5%",
+        "Observabilitat completa amb dashboards"
+      ]
+    },
+    {
+      "id": "42",
+      "title": "Repte 42 — Desplegament de Mastodon a EKS amb tots els serveis AWS",
+      "description": "Pipeline GitLab CI/CD per empaquetar, testejar i desplegar Helm charts a EKS. GitOps amb ArgoCD.",
+      "categories": ["kubernetes", "cicd"],
+      "technologies": ["Helm", "GitLab CI", "ArgoCD", "EKS", "Docker"],
+      "github": "https://github.com/confusedyeti03/ReptesAWS/tree/main/Repte42",
+      "highlights": [
+        "Lint i validació automàtica de charts",
+        "Versionat semàntic automàtic",
+        "GitOps: deploy via PR merge"
+      ]
+    }
+  ]
+}

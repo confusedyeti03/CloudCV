@@ -1,0 +1,41 @@
+# =============================================================================
+# Terraform Variables - COPY THIS FILE
+# =============================================================================
+# USAGE:
+#   1. Copy this file: cp terraform.tfvars.example terraform.tfvars
+#   2. Fill in your real values
+#   3. NEVER commit terraform.tfvars to git (it contains secrets)
+# =============================================================================
+
+# AWS Region (choose your preferred region)
+aws_region = "eu-west-1"
+
+# Project name used for resource naming
+project_name = "example-cloudcv"
+
+# EC2 instance type (must be valid in your region)
+instance_type = "t4g.nano"
+
+# SSH key name for EC2 instances
+ssh_key_name = "vockey"
+
+# Custom SSH port (avoid default 22)
+ssh_port = 2222
+
+# Domain name for your setup
+domain = "example.com"
+
+# Administrative email for DMARC reporting
+admin_email = "admin@example.com"
+
+# Cloudflare API Token (create at https://dash.cloudflare.com/profile/api-tokens)
+# Required permissions: Zone:DNS:Edit, Zone:Zone:Read
+cloudflare_api_token = "fake-cloudflare-token-1234567890"
+
+# Cloudflare zone ID for your domain (find in Cloudflare dashboard)
+cloudflare_zone_id = "fake-zone-id-abcdef123456"
+
+# Monthly budget alert threshold in USD
+# Recommended: $6 for t4g.nano portfolio (actual cost ~$4.55/month)
+# Alert triggers at 80% = $4.80
+monthly_budget = 6

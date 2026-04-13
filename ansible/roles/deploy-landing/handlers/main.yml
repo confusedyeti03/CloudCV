@@ -1,0 +1,10 @@
+# =============================================================================
+# Role: deploy-landing - Handlers
+# =============================================================================
+---
+# Landing page deployment handlers
+
+- name: Reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded

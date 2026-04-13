@@ -1,0 +1,347 @@
+/* Main Stylesheet - CloudCV
+   PURPOSE: Modern landing page with gradient background and pill navigation
+   DESIGN: Minimalist, clean typography, subtle shadows, teal accent (#0d4d4d) */
+
+/* Base reset */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Theme variables */
+:root {
+    --primary: #0d4d4d;
+    --primary-dark: #0a3d3d;
+    --primary-light: #1a6b6b;
+    --text-on-dark: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.7);
+    --bg-gradient: linear-gradient(135deg, #e8e8e8 0%, #d4e7f5 100%);
+    --card-shadow: 0 16px 40px rgba(13, 77, 77, 0.25);
+    --pill-shadow: 0 10px 24px rgba(13, 77, 77, 0.2);
+    --font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    /* Spacing Scale (used by CV and Projects pages) */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+
+    /* Typography Scale */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 2rem;
+
+    /* Border Radii */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Light mode colors (for CV and Projects pages) */
+    --accent: #0d4d4d;
+    --bg: #f5f7f7;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f0f4f4;
+    --text: #1a2e2e;
+    --text-secondary: #4a5e5e;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    font-family: var(--font-family);
+    background: var(--bg-gradient);
+    color: var(--text-on-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Pill Navigation */
+.pill-nav {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 50px;
+    background: var(--primary);
+    box-shadow: var(--pill-shadow);
+    z-index: 100;
+}
+
+.pill-link {
+    color: var(--text-on-dark);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 999px;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pill-link:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.pill-link.is-active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Page Layout */
+.page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 140px 24px 80px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Hero Card */
+.hero-card {
+    width: min(640px, 100%);
+    background: var(--primary);
+    border-radius: 32px;
+    padding: 56px 48px 40px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.hero-photo {
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    border: 4px solid rgba(255, 255, 255, 0.45);
+    object-fit: cover;
+    object-position: top center;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.hero-card h1 {
+    font-size: 2.9rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.hero-bio {
+    max-width: 500px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-top: 4px;
+}
+
+/* Social Buttons */
+.social-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.social-button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-on-dark);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.social-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.social-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Action Buttons */
+.action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.action-button {
+    padding: 16px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    color: var(--text-on-dark);
+}
+
+.action-button.primary {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.action-button.secondary {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.28);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hero-footnote {
+    width: 100%;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.deploy-badge {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    letter-spacing: 0.01em;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Visit Counter */
+.visit-counter {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Focus States (Accessibility) */
+.pill-link:focus-visible,
+.social-button:focus-visible,
+.action-button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .pill-nav {
+        top: 16px;
+        padding: 8px 12px;
+        gap: 4px;
+    }
+
+    .pill-link {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+    }
+
+    .page {
+        padding: 110px 16px 48px;
+    }
+
+    .hero-card {
+        padding: 40px 24px 28px;
+        border-radius: 24px;
+        gap: 14px;
+    }
+
+    .hero-photo {
+        width: 150px;
+        height: 150px;
+    }
+
+    .hero-card h1 {
+        font-size: 2.2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .hero-bio {
+        font-size: 0.95rem;
+    }
+
+    .social-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .social-button svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .action-button {
+        padding: 14px 22px;
+        font-size: 0.95rem;
+    }
+
+    .deploy-badge {
+        font-size: 0.8rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+    .pill-nav {
+        gap: 2px;
+        padding: 6px 10px;
+    }
+
+    .pill-link {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+
+    .action-row {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .action-button {
+        width: 100%;
+        text-align: center;
+    }
+}

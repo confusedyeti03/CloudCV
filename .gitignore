@@ -1,0 +1,77 @@
+# ==============================
+# Terraform
+# ==============================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ==============================
+# Ansible
+# ==============================
+*.retry
+
+# ==============================
+# Python / FastAPI
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+.env*
+*.egg-info/
+dist/
+build/
+
+# ==============================
+# IDE / Editor
+# ==============================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Secrets / Keys
+# ==============================
+*.pem
+*.key
+*credentials*
+*secret*
+
+# ==============================
+# Logs
+# ==============================
+*.log
+logs/
+
+# ==============================
+# OS Files
+# ==============================
+desktop.ini
+generated/
+nul
+
+# ==============================
+# Reference / Source Materials
+# ==============================
+PortfolioCloudAWS-main/
+
+# Source images in root (copies are in web/assets/)
+/TITOL*.jpg
+/TITOL*.png
+/aws-academy-*.png

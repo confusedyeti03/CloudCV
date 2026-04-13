@@ -1,0 +1,22 @@
+# =============================================================================
+# Role: deploy-cv - Handlers
+# =============================================================================
+# Purpose: Manage restarts and reloads of the cv-service
+# =============================================================================
+---
+# Reload systemd when the service unit changes
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+# Restart the service when code or configuration changes
+- name: restart cv-service
+  ansible.builtin.service:
+    name: cv-service
+    state: restarted
+
+# Reload without stopping (if the service supports it)
+- name: reload cv-service
+  ansible.builtin.service:
+    name: cv-service
+    state: reloaded
