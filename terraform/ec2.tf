@@ -46,6 +46,11 @@ resource "aws_instance" "web" {
               #!/bin/bash
               set -e
 
+              # Change SSH port to match SG
+              sed -i "s/^#*Port 22/Port 2222/" /etc/ssh/sshd_config
+              sed -i "s/^#*Port .*/Port 2222/" /etc/ssh/sshd_config.d/*.conf 2>/dev/null || true
+              systemctl restart ssh
+              
               if ! swapon --show | grep -q "/swapfile"; then
                 fallocate -l 1G /swapfile
                 chmod 600 /swapfile
@@ -69,3 +74,18 @@ resource "aws_eip" "web" {
     Name = "${var.project_name}-eip"
   }
 }
+
+# Run Ansible Playbook automatically
+resource "null_resource" "run_ansible" {
+  depends_on = [aws_instance.web, aws_eip.web]
+
+  triggers = {
+    instance_id = aws_instance.web.id
+  }
+
+  provisioner "local-exec" {
+    command     = "wsl bash -c \"sleep 30 && cd ../ansible && ANSIBLE_CONFIG=ansible.cfg ANSIBLE_ROLES_PATH=roles ansible-playbook playbooks/site.yml -e ansible_host=${aws_eip.web.public_ip}\""
+    interpreter = ["powershell", "-Command"]
+  }
+}
+

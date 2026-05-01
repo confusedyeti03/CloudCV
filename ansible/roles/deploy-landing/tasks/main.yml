@@ -34,7 +34,7 @@
 # delete: true removes files at destination that don't exist at source
 - name: Synchronize static web content
   ansible.builtin.synchronize:
-    src: "{{ playbook_dir }}/../web/"
+    src: "{{ playbook_dir }}/../../web/"
     dest: /var/www/cloudcv/
     recursive: true
     delete: true

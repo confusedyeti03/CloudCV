@@ -49,7 +49,7 @@
 # Synchronize files with rsync, excluding venv and cache
 - name: Sync cv-service files
   ansible.posix.synchronize:
-    src: "{{ playbook_dir }}/../cv-service/"
+    src: "{{ playbook_dir }}/../../cv-service/"
     dest: "{{ cv_service_path }}/"
     recursive: true
     rsync_opts:
@@ -57,7 +57,7 @@
       - "--exclude=*.pyc"
       - "--exclude=.venv"
       - "--exclude=venv"
-      - "--exclude=data/"
+      - "--exclude=data/*.db"
       - "--exclude=.git"
   notify: restart cv-service
   tags: [deploy, cv, api]

@@ -83,7 +83,7 @@ server {
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()" always;
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self'; frame-ancestors 'self';" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://cdnjs.cloudflare.com; frame-ancestors 'self';" always;
     
     # HSTS (only enable after confirming SSL works)
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
@@ -91,7 +91,7 @@ server {
     # -------------------------------------------------------------------------
     # API: Proxy pass to FastAPI
     # -------------------------------------------------------------------------
-    location /api/ {
+    location ^~ /api/ {
         limit_req zone=api burst=10 nodelay;
         
         proxy_pass {{ nginx_api_backend }}/;
@@ -109,8 +109,53 @@ server {
     # -------------------------------------------------------------------------
     # CV PAGE: Served by FastAPI (PDF preview with iframe)
     # -------------------------------------------------------------------------
-    location /cv/ {
+    location ^~ /cv/preview/ {
         limit_req zone=pdf burst=3 nodelay;
+        
+        proxy_pass {{ nginx_api_backend }}/preview/;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    location ^~ /cv/download/ {
+        limit_req zone=pdf burst=3 nodelay;
+        
+        proxy_pass {{ nginx_api_backend }}/download/;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    location ^~ /cv/pdf {
+        limit_req zone=pdf burst=3 nodelay;
+        
+        proxy_pass {{ nginx_api_backend }}/pdf;
+        
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    location ^~ /cv/ {
+        limit_req zone=api burst=20 nodelay;
         
         proxy_pass {{ nginx_api_backend }}/;
         

@@ -12,15 +12,13 @@ terraform {
     }
   }
 
-  backend "s3" {
-    # NOTE: Backend blocks cannot use variables. Update these values manually
-    # to match your S3 bucket, state key path, and region.
-    bucket       = "lnoval-terraform-state"
-    key          = "portfolio/terraform.tfstate"
-    region       = "eu-west-1"
-    use_lockfile = true
-    encrypt      = true
-  }
+  # backend "s3" {
+  #   bucket       = "lnoval-terraform-state"
+  #   key          = "portfolio/terraform.tfstate"
+  #   region       = "eu-west-1"
+  #   use_lockfile = true
+  #   encrypt      = true
+  # }
 }
 
 provider "aws" {

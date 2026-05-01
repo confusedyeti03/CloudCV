@@ -53,9 +53,9 @@ const updateDownloadLabel = (lang) => {
 };
 
 const updateLinks = (lang) => {
-    const base = API_BASE ? `${API_BASE}` : "";
-    elements.iframe.src = `${base}/preview/${lang}`;
-    elements.downloadBtn.href = `${base}/download/${lang}`;
+    const base = API_BASE ? `${API_BASE}/` : "";
+    elements.iframe.src = `${base}preview/${lang}`;
+    elements.downloadBtn.href = `${base}download/${lang}`;
     updateDownloadLabel(lang);
 };
 
@@ -64,9 +64,9 @@ const renderPdfToCanvas = async (lang) => {
         return;
     }
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.js";
-    const base = API_BASE ? `${API_BASE}` : "";
-    const loadingTask = pdfjsLib.getDocument(`${base}/preview/${lang}`);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const base = API_BASE ? `${API_BASE}/` : "";
+    const loadingTask = pdfjsLib.getDocument(`${base}preview/${lang}`);
     const pdf = await loadingTask.promise;
 
     const container = elements.mobileCanvas;
@@ -125,8 +125,8 @@ const initTabs = () => {
 
 const updateVisits = async () => {
     try {
-        const base = API_BASE ? `${API_BASE}` : "";
-        const response = await fetch(`${base}/visits`, { method: "POST" });
+        const base = API_BASE ? `${API_BASE}/` : "";
+        const response = await fetch(`${base}visits`, { method: "POST" });
         if (!response.ok) {
             return;
         }

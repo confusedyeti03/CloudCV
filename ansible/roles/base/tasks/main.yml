@@ -46,6 +46,7 @@
       - htop
       - vim
       - unzip
+      - rsync
     state: present
   tags: [base, packages]
 
