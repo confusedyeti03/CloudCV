@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 resource "aws_iam_role" "ec2" {
   name = "${var.project_name}-ec2-role"
 

@@ -1,6 +1,21 @@
 {
   "projects": [
     {
+      "id": "cloudcv",
+      "title": "CloudCV — Infraestructura d'Aquest Portfolio",
+      "description": "Infrastructure-as-Code i automatització del desplegament d'aquesta mateixa web. Inclou backend FastAPI per generació de PDF, Nginx com a proxy invers i securització.",
+      "categories": ["infrastructure", "web"],
+      "technologies": ["Terraform", "Ansible", "FastAPI", "Nginx", "AWS EC2", "Python"],
+      "github": "https://github.com/confusedyeti03/CloudCV",
+      "highlights": [
+        "Desplegament automatitzat amb IaC",
+        "Cost optimitzat (~$8/mes en AWS)",
+        "API pròpia de renderitzat de CVs a PDF"
+      ]
+    }
+  ],
+  "challenges": [
+    {
       "id": "18",
       "title": "Repte 18 — Aplicació serverless amb autenticació i autorització completa",
       "description": "API REST serverless amb API Gateway, Lambda (Python), i DynamoDB. Autenticació amb Cognito i desplegament amb Terraform.",

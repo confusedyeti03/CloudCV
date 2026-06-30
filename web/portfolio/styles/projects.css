@@ -110,6 +110,23 @@ body {
     margin-bottom: 1rem;
 }
 
+/* Highlights List */
+.highlights {
+    list-style: disc;
+    padding-left: 1.25rem;
+}
+
+.highlights li {
+    color: #4a5e5e;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0.4rem;
+}
+
+.highlights li:last-child {
+    margin-bottom: 0;
+}
+
 /* Category Badges */
 .badges {
     display: flex;

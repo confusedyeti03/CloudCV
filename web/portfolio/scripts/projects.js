@@ -27,7 +27,8 @@ const escapeUrl = (url) => {
 
 // Load and render projects
 async function loadProjects() {
-    const gridEl = document.getElementById('projects-grid');
+    const projectsGridEl = document.getElementById('projects-grid');
+    const challengesGridEl = document.getElementById('challenges-grid');
     
     try {
         const response = await fetch('./data/projects.json');
@@ -37,49 +38,52 @@ async function loadProjects() {
         }
         
         const data = await response.json();
-        const projects = data.projects || [];
         
-        if (projects.length === 0) {
-            gridEl.innerHTML = `<p class="loading">No projects available.</p>`;
-            return;
-        }
+        // Helper function to generate HTML for an array of items
+        const generateHtml = (items) => {
+            if (!items || items.length === 0) {
+                return `<p class="loading">No items available.</p>`;
+            }
+            return items.map(item => `
+                <article class="project-card" data-id="${escapeHtml(item.id)}">
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <p class="description">${escapeHtml(item.description)}</p>
+                    
+                    <div class="badges">
+                        ${item.categories.map(cat => `<span class="badge">${escapeHtml(cat)}</span>`).join('')}
+                    </div>
+                    
+                    <div class="tech-stack">
+                        ${item.technologies.map(tech => `<span>${escapeHtml(tech)}</span>`).join('')}
+                    </div>
+                    
+                    ${item.highlights ? `
+                        <ul class="highlights">
+                            ${item.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+                        </ul>
+                    ` : ''}
+                    
+                    <a href="${escapeUrl(item.github)}" target="_blank" class="btn-github">
+                        View on GitHub →
+                    </a>
+                </article>
+            `).join('');
+        };
         
-        // Generate HTML for each project
-        const html = projects.map(project => `
-            <article class="project-card" data-id="${escapeHtml(project.id)}">
-                <h3>${escapeHtml(project.title)}</h3>
-                <p class="description">${escapeHtml(project.description)}</p>
-                
-                <div class="badges">
-                    ${project.categories.map(cat => `<span class="badge">${escapeHtml(cat)}</span>`).join('')}
-                </div>
-                
-                <div class="tech-stack">
-                    ${project.technologies.map(tech => `<span>${escapeHtml(tech)}</span>`).join('')}
-                </div>
-                
-                ${project.highlights ? `
-                    <ul class="highlights">
-                        ${project.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
-                    </ul>
-                ` : ''}
-                
-                <a href="${escapeUrl(project.github)}" target="_blank" class="btn-github">
-                    View on GitHub →
-                </a>
-            </article>
-        `).join('');
-        
-        gridEl.innerHTML = html;
+        // Render both grids
+        if (projectsGridEl) projectsGridEl.innerHTML = generateHtml(data.projects);
+        if (challengesGridEl) challengesGridEl.innerHTML = generateHtml(data.challenges);
         
     } catch (error) {
         console.error('Error loading projects:', error);
-        gridEl.innerHTML = `
+        const errorHtml = `
             <div class="error">
-                <p>Error loading projects. Please refresh the page.</p>
+                <p>Error loading content. Please refresh the page.</p>
                 <p><small>${escapeHtml(error.message)}</small></p>
             </div>
         `;
+        if (projectsGridEl) projectsGridEl.innerHTML = errorHtml;
+        if (challengesGridEl) challengesGridEl.innerHTML = errorHtml;
     }
 }
 

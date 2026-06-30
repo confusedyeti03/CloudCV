@@ -4,7 +4,7 @@
 ---
 # Landing page deployment handlers
 
-- name: Reload nginx
+- name: reload nginx
   ansible.builtin.systemd:
     name: nginx
     state: reloaded

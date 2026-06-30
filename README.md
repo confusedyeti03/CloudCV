@@ -160,6 +160,14 @@ pip install -r requirements.txt
 uvicorn app:app --reload
 ```
 
-## License
+## Cost
 
-Private repository for personal portfolio.
+Targeting ~$8 USD/month on AWS:
+
+| Resource | ~Cost |
+| --- | --- |
+| EC2 t4g.nano (ARM64) | ~$3.50/mo |
+| Elastic IP (IPv4) | ~$3.60/mo |
+| EBS 8 GB gp3 | ~$0.65/mo |
+| Data transfer | ~$0.10/mo |
+| Cloudflare DNS | Free |

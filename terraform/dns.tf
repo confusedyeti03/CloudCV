@@ -1,31 +1,33 @@
 # =============================================================================
-# Cloudflare DNS Records
+# Cloudflare DNS Records (Serverless Architecture)
 # =============================================================================
-# PURPOSE: DNS-only mode (grey cloud) for Let's Encrypt SSL
-# NOTE: proxied = false to allow direct connection for Certbot ACME challenges
+# PURPOSE: Point to CloudFront distribution instead of EC2 Elastic IP
+# CloudFront handles SSL/TLS (ACM certificates), no Certbot needed
 # =============================================================================
 
-# Root domain (DNS-only for Let's Encrypt)
+# Root domain - points to CloudFront distribution
+# CloudFront alias records don't require A records, but Cloudflare requires them
+# Use CNAME to CloudFront domain
 resource "cloudflare_record" "root" {
   zone_id = var.cloudflare_zone_id
   name    = "@"
-  type    = "A"
-  content = aws_eip.web.public_ip
-  proxied = false # DNS-only mode for Let's Encrypt
+  type    = "CNAME"
+  content = aws_cloudfront_distribution.static.domain_name
+  proxied = false
   ttl     = 300
 }
 
-# WWW subdomain (DNS-only for Let's Encrypt)
+# WWW subdomain - also points to CloudFront
 resource "cloudflare_record" "www" {
   zone_id = var.cloudflare_zone_id
   name    = "www"
-  type    = "A"
-  content = aws_eip.web.public_ip
-  proxied = false # DNS-only mode for Let's Encrypt
+  type    = "CNAME"
+  content = aws_cloudfront_distribution.static.domain_name
+  proxied = false
   ttl     = 300
 }
 
-# CAA record - Only Let's Encrypt can issue certificates
+# CAA record - Allow ACM to issue certificates for this domain
 resource "cloudflare_record" "caa" {
   zone_id = var.cloudflare_zone_id
   name    = "@"
@@ -33,7 +35,20 @@ resource "cloudflare_record" "caa" {
   data {
     flags = 0
     tag   = "issue"
-    value = "letsencrypt.org"
+    value = "amazon.com"  # AWS Certificate Manager
+  }
+  ttl = 3600
+}
+
+# Secondary CAA record - Allow Let's Encrypt (not used, but for compatibility)
+resource "cloudflare_record" "caa_letsencrypt" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  type    = "CAA"
+  data {
+    flags = 0
+    tag   = "issue"
+    value = "letsencrypt.org;AccountUri=https://acme-v02.api.letsencrypt.org/acme/acct/12345678"
   }
   ttl = 3600
 }
