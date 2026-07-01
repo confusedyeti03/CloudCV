@@ -269,7 +269,7 @@ resource "aws_lambda_permission" "cv_apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.cv_handler.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:*:*"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
 
 resource "aws_lambda_permission" "visit_apigw" {
@@ -277,7 +277,7 @@ resource "aws_lambda_permission" "visit_apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.visit_counter.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:*:*"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
 
 resource "aws_lambda_permission" "projects_apigw" {
@@ -285,7 +285,7 @@ resource "aws_lambda_permission" "projects_apigw" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.projects_handler.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:*:*"
+  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
 }
 
 # Outputs for use in API Gateway

@@ -177,14 +177,12 @@ resource "aws_cloudfront_distribution" "static" {
     compress               = true
   }
 
-  # Custom domain configuration
-  aliases = [var.domain, "www.${var.domain}"]
+  # CloudFront default certificate (MVP - custom domain deferred to FASE 5)
+  # For custom domain, enable ACM certificate in FASE 5
+  # aliases = [var.domain, "www.${var.domain}"]
 
-  # SSL/TLS certificate from ACM (configured in acm.tf)
   viewer_certificate {
-    acm_certificate_arn      = aws_acm_certificate.main.arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
+    cloudfront_default_certificate = true
   }
 
   restrictions {
@@ -193,19 +191,17 @@ resource "aws_cloudfront_distribution" "static" {
     }
   }
 
-  # CloudFront logging (optional, ~$0.05/month)
-  logging_config {
-    include_cookies = false
-    bucket          = aws_s3_bucket.assets.bucket_regional_domain_name
-    prefix          = "cloudfront-logs/"
-  }
+  # CloudFront logging (deferred to FASE 6 - requires ACL configuration)
+  # logging_config {
+  #   include_cookies = false
+  #   bucket          = aws_s3_bucket.assets.bucket_regional_domain_name
+  #   prefix          = "cloudfront-logs/"
+  # }
 
   tags = {
     Name        = "${var.project_name}-cdn"
     Environment = "production"
   }
-
-  depends_on = [aws_acm_certificate_validation.main]
 }
 
 # CloudFront Cache Policies

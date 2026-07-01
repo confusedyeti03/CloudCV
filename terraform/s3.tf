@@ -20,6 +20,12 @@ resource "aws_s3_bucket" "assets" {
   }
 }
 
+# Enable ACLs to allow CloudFront to write logs (deferred to FASE 6)
+# resource "aws_s3_bucket_acl" "assets" {
+#   bucket = aws_s3_bucket.assets.id
+#   acl    = "log-delivery-write"
+# }
+
 # Enable versioning for asset management and rollback capability
 resource "aws_s3_bucket_versioning" "assets" {
   bucket = aws_s3_bucket.assets.id
@@ -57,6 +63,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "assets" {
   rule {
     id     = "delete-old-versions"
     status = "Enabled"
+    filter {}
 
     noncurrent_version_expiration {
       noncurrent_days = 30

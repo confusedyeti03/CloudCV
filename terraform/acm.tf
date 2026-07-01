@@ -1,4 +1,6 @@
 # AWS Certificate Manager (ACM)
+# NOTE: Disabled for FASE 3 (MVP). ACM certificates require manual DNS validation.
+# Enable in FASE 5 after DNS records are validated via Cloudflare.
 # Free SSL/TLS certificate for CloudFront
 # Features:
 # - Auto-renewal (AWS manages renewal before expiry)
@@ -6,6 +8,7 @@
 # - DNS validation (via Cloudflare)
 # - No per-certificate fees
 
+/* DISABLED FOR FASE 3 MVP
 resource "aws_acm_certificate" "main" {
   domain_name       = var.domain
   validation_method = "DNS"
@@ -90,3 +93,4 @@ output "cloudfront_certificate_arn" {
   description = "ACM Certificate ARN for CloudFront distribution"
   value       = aws_acm_certificate.cloudfront.arn
 }
+*/

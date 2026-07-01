@@ -76,6 +76,9 @@ resource "aws_eip" "web" {
 }
 
 # Run Ansible Playbook automatically
+# DISABLED FOR FASE 3: Ansible configuration deferred to FASE 8 (EC2 retirement)
+# In FASE 3-7, EC2 remains unchanged while serverless infrastructure is built
+/*
 resource "null_resource" "run_ansible" {
   depends_on = [aws_instance.web, aws_eip.web]
 
@@ -88,4 +91,5 @@ resource "null_resource" "run_ansible" {
     interpreter = ["powershell", "-Command"]
   }
 }
+*/
 
