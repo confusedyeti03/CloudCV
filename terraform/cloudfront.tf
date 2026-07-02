@@ -27,6 +27,7 @@ resource "aws_cloudfront_distribution" "static" {
   default_root_object = "index.html"
   comment             = "CloudCV static content CDN"
   price_class         = "PriceClass_100" # US, Europe, Asia (best price/coverage balance)
+  web_acl_id          = aws_wafv2_web_acl.cloudfront.arn
 
   origin {
     domain_name = aws_s3_bucket.assets.bucket_regional_domain_name
@@ -177,12 +178,14 @@ resource "aws_cloudfront_distribution" "static" {
     compress               = true
   }
 
-  # CloudFront default certificate (MVP - custom domain deferred to FASE 5)
-  # For custom domain, enable ACM certificate in FASE 5
-  # aliases = [var.domain, "www.${var.domain}"]
+  # FASE 5: Use ACM certificate for custom domain
+  aliases = [var.domain, "www.${var.domain}"]
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn            = aws_acm_certificate.cloudfront.arn
+    ssl_support_method             = "sni-only"
+    minimum_protocol_version       = "TLSv1.2_2021"
+    cloudfront_default_certificate = false
   }
 
   restrictions {

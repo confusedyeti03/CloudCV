@@ -58,3 +58,10 @@ variable "monthly_budget" {
   type        = number
   default     = 6
 }
+
+variable "api_key" {
+  description = "API key for protecting POST /visits endpoint (FASE 5)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

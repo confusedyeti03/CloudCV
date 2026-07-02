@@ -6,14 +6,37 @@ from datetime import datetime, timedelta
 dynamodb = boto3.resource('dynamodb')
 
 visits_table = dynamodb.Table(os.environ.get('DDB_VISITS_TABLE', 'lnoval-cv-visits'))
+api_key = os.environ.get('API_KEY', '')
 
 def handler(event, context):
     """
     Lambda handler for visit tracking
     POST /visits
+    Headers: Authorization: Bearer <api-key> OR X-API-Key: <api-key>
     Body: { "page_id": "portfolio", "metadata": {...} }
     """
     try:
+        # FASE 5: Validate API key
+        headers = event.get('headers', {})
+        auth_header = headers.get('authorization', '') or headers.get('Authorization', '')
+        api_key_header = headers.get('x-api-key', '') or headers.get('X-API-Key', '')
+
+        # Support "Bearer <api-key>" format or direct X-API-Key header
+        provided_key = None
+        if auth_header.startswith('Bearer '):
+            provided_key = auth_header[7:]
+        elif api_key_header:
+            provided_key = api_key_header
+
+        # Validate API key (if configured)
+        if api_key and provided_key != api_key:
+            print(f"Unauthorized visit tracking attempt")
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'Unauthorized. Invalid or missing API key.'})
+            }
+
         # Parse request body
         body_str = event.get('body', '{}')
         if isinstance(body_str, str):

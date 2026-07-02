@@ -1,5 +1,5 @@
 # AWS API Gateway HTTP API
-# Simplified version for FASE 3 MVP
+# FASE 5: Added security with WAF and optional API key authentication
 
 # CloudWatch Log Group for API Gateway
 resource "aws_cloudwatch_log_group" "api_gateway" {
@@ -88,12 +88,16 @@ resource "aws_apigatewayv2_integration" "projects_handler" {
   payload_format_version = "2.0"
 }
 
-# Route: POST /visits
+# Route: POST /visits (Protected - requires API key)
+# FASE 5: Add API key validation via custom header check
 resource "aws_apigatewayv2_route" "visits_post" {
   api_id             = aws_apigatewayv2_api.cv_api.id
   route_key          = "POST /visits"
   authorization_type = "NONE"
   target             = "integrations/${aws_apigatewayv2_integration.visit_counter.id}"
+
+  # Note: API key validation is handled by visit_counter Lambda
+  # Expects X-API-Key header or Authorization: Bearer <key>
 }
 
 # Integration: Lambda for /visits
