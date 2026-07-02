@@ -56,6 +56,14 @@ resource "aws_apigatewayv2_route" "cv_get" {
   target             = "integrations/${aws_apigatewayv2_integration.cv_handler.id}"
 }
 
+# Route: GET /cv/{language}/pdf
+resource "aws_apigatewayv2_route" "cv_pdf_get" {
+  api_id             = aws_apigatewayv2_api.cv_api.id
+  route_key          = "GET /cv/{language}/pdf"
+  authorization_type = "NONE"
+  target             = "integrations/${aws_apigatewayv2_integration.cv_handler.id}"
+}
+
 # Integration: Lambda for /cv/{language}
 resource "aws_apigatewayv2_integration" "cv_handler" {
   api_id             = aws_apigatewayv2_api.cv_api.id

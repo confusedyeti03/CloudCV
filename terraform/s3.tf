@@ -107,6 +107,13 @@ resource "aws_s3_bucket_policy" "assets" {
         }
         Action   = ["s3:GetObject"]
         Resource = "${aws_s3_bucket.assets.arn}/*"
+      },
+      {
+        Sid    = "AllowPublicReadCVPDF"
+        Effect = "Allow"
+        Principal = "*"
+        Action   = ["s3:GetObject"]
+        Resource = "${aws_s3_bucket.assets.arn}/cv/*.pdf"
       }
     ]
   })
