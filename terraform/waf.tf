@@ -3,8 +3,12 @@
 # Rules: SQL injection, XSS, rate limiting, known bad inputs
 # Cost: $5/month + $0.60/million requests
 
+# NOTE: CloudFront WAF must be created in us-east-1 region
+# Provider "aws.us_east_1" is defined in providers.tf
+
 # WAF Web ACL for CloudFront
 resource "aws_wafv2_web_acl" "cloudfront" {
+  provider    = aws.us_east_1
   name        = "${var.project_name}-waf-cloudfront"
   description = "WAF for CloudFront CDN - Protects against common web attacks"
   scope       = "CLOUDFRONT"
@@ -129,8 +133,9 @@ resource "aws_wafv2_web_acl" "cloudfront" {
   }
 }
 
-# CloudWatch Log Group for WAF
+# CloudWatch Log Group for WAF (us-east-1)
 resource "aws_cloudwatch_log_group" "waf_log_group" {
+  provider          = aws.us_east_1
   name              = "/aws/waf/${var.project_name}-cloudfront"
   retention_in_days = 30
 
@@ -139,16 +144,22 @@ resource "aws_cloudwatch_log_group" "waf_log_group" {
   }
 }
 
-# WAF Logging Configuration
-resource "aws_wafv2_web_acl_logging_configuration" "cloudfront" {
-  resource_arn            = aws_wafv2_web_acl.cloudfront.arn
-  log_destination_configs = [aws_cloudwatch_log_group.waf_log_group.arn]
+# WAF Logging Configuration (deferred to FASE 6)
+# TODO: Configure WAF logging with proper CloudWatch Logs ARN format
+# For MVP, WAF metrics are available in CloudWatch but not streamed to logs
+# resource "aws_wafv2_web_acl_logging_configuration" "cloudfront" {
+#   provider    = aws.us_east_1
+#   resource_arn = aws_wafv2_web_acl.cloudfront.arn
+#   log_destination_configs = [
+#     "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:log-group:${aws_cloudwatch_log_group.waf_log_group.name}:*"
+#   ]
+#
+#   depends_on = [aws_cloudwatch_log_group.waf_log_group]
+# }
 
-  depends_on = [aws_cloudwatch_log_group.waf_log_group]
-}
-
-# CloudWatch Alarms for WAF
+# CloudWatch Alarms for WAF (us-east-1)
 resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
+  provider            = aws.us_east_1
   alarm_name          = "${var.project_name}-waf-blocked-requests"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1

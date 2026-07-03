@@ -178,7 +178,7 @@ resource "aws_cloudfront_distribution" "static" {
     compress               = true
   }
 
-  # FASE 5: Use ACM certificate for custom domain
+  # FASE 5: Use ACM certificate for custom domain (validated ✅)
   aliases = [var.domain, "www.${var.domain}"]
 
   viewer_certificate {

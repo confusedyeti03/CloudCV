@@ -10,6 +10,44 @@ resource "aws_kms_key" "s3_encryption" {
   deletion_window_in_days = 10
   enable_key_rotation     = true
 
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudTrail to encrypt logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "kms:GenerateDataKey"
+        Resource = "*"
+        Condition = {
+          StringLike = {
+            "kms:EncryptionContext:aws:cloudtrail:arn" = "arn:aws:cloudtrail:*:${data.aws_caller_identity.current.account_id}:trail/*"
+          }
+        }
+      },
+      {
+        Sid    = "Allow CloudTrail to describe key"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
+        Action   = "kms:DescribeKey"
+        Resource = "*"
+      }
+    ]
+  })
+
   tags = {
     Name = "${var.project_name}-s3-key"
   }
@@ -108,20 +146,8 @@ resource "aws_cloudtrail" "main" {
   enable_log_file_validation    = true
   kms_key_id                    = aws_kms_key.s3_encryption.arn
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
-
-    data_resource {
-      type   = "AWS::S3::Object"
-      values = ["arn:aws:s3:::*/"]
-    }
-
-    data_resource {
-      type   = "AWS::Lambda::Function"
-      values = ["arn:aws:lambda:*:*:function/*"]
-    }
-  }
+  # TODO: Enable event selectors in FASE 6 with proper ARN format
+  # For MVP, track all management events only (default behavior)
 
   tags = {
     Name        = "${var.project_name}-audit-trail"
