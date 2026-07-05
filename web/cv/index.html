@@ -7,70 +7,68 @@
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles/main.css">
     <style>
-        .hero-card {
-            width: min(900px, 100%);
-            gap: 24px;
+        .hero-card.cv-card {
+            width: min(1100px, 100%);
+            padding: 40px 40px 32px;
+            gap: 20px;
         }
 
-        .cv-header {
+        .lang-row {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 100%;
-            text-align: left;
-        }
-
-        .cv-header h1 {
-            text-align: center;
-            margin-bottom: 0;
-        }
-
-        .cv-downloads {
-            display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
-        .cv-download-btn {
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
-            text-decoration: none;
+        .lang-btn {
+            padding: 10px 24px;
+            border: none;
             border-radius: 999px;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: background 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-on-dark);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .cv-download-btn:hover {
-            background: rgba(255, 255, 255, 0.25);
+        .lang-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .lang-btn.is-active {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .lang-btn:focus-visible {
+            outline: 2px solid #ffffff;
+            outline-offset: 3px;
         }
 
         .cv-viewer {
-            border: none;
+            width: 100%;
+            height: min(78vh, 1100px);
             border-radius: 16px;
             overflow: hidden;
-            background: white;
-            height: 800px;
-            width: 100%;
-            box-shadow: 0 16px 40px rgba(13, 77, 77, 0.25);
+            background: #ffffff;
         }
 
-        .cv-viewer embed {
+        .cv-viewer iframe {
             width: 100%;
             height: 100%;
             border: none;
         }
 
-        @media (max-width: 768px) {
-            .hero-card {
-                width: min(640px, 100%);
+        @media (max-width: 600px) {
+            .hero-card.cv-card {
+                padding: 28px 16px 20px;
             }
 
             .cv-viewer {
-                height: 600px;
+                height: 70vh;
             }
         }
     </style>
@@ -83,21 +81,31 @@
     </nav>
 
     <main class="page">
-        <div class="cv-page">
-            <div class="cv-header">
-                <h1 class="cv-title">Curriculum Vitae</h1>
-                <div class="cv-downloads">
-                    <a href="/cv/cv_ca.pdf" download="Lluís_Noval_CV_CA.pdf" class="cv-download-btn">📥 Català</a>
-                    <a href="/cv/cv_en.pdf" download="Lluis_Noval_CV_EN.pdf" class="cv-download-btn">📥 English</a>
-                    <a href="/cv/cv_es.pdf" download="Lluis_Noval_CV_ES.pdf" class="cv-download-btn">📥 Español</a>
-                </div>
+        <section class="hero-card cv-card" aria-labelledby="cv-title">
+            <h1 id="cv-title">Curriculum Vitae</h1>
+
+            <div class="lang-row" role="group" aria-label="CV language">
+                <button class="lang-btn is-active" data-lang="ca">Català</button>
+                <button class="lang-btn" data-lang="en">English</button>
+                <button class="lang-btn" data-lang="es">Español</button>
             </div>
 
             <div class="cv-viewer">
-                <embed src="/cv/cv_ca.pdf" type="application/pdf">
+                <iframe id="cv-frame" src="/cv/cv_ca.pdf" title="CV PDF"></iframe>
             </div>
-        </div>
+        </section>
     </main>
+
+    <script>
+        const frame = document.getElementById('cv-frame');
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('is-active'));
+                btn.classList.add('is-active');
+                frame.src = `/cv/cv_${btn.dataset.lang}.pdf`;
+            });
+        });
+    </script>
 
     <script src="/scripts/visits.js"></script>
 </body>

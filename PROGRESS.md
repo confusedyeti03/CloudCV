@@ -56,14 +56,27 @@ Migrate CloudCV from EC2 ($8.05/month) to serverless architecture - **fully serv
 
 ---
 
-## Remaining Phase
+### FASE 7: Cost Analysis & Monitoring ✅ (2026-07-05)
+- CloudWatch dashboard `example-cloudcv-serverless` deployed
+  (terraform/dashboard.tf): Lambda invocations/errors/duration,
+  API Gateway requests/errors, DynamoDB capacity, CloudFront requests
+- Budget alert active: $6/month, email at 80% (terraform/budget.tf)
+- Cost Explorer unavailable (AWS Academy Learner Lab) — estimates used
 
-### FASE 7: Cost Analysis & Monitoring ⏳
-- Verify actual monthly cost in Cost Explorer (next billing cycle)
-- CloudWatch dashboard (Lambda, DynamoDB, CloudFront cache hit rate)
-- Evaluate WAF cost (~$5/month) vs benefit — main optimization candidate
-- Budget alert already active (terraform/budget.tf)
-- Docs: [FASE7_COST_ANALYSIS.md](terraform/FASE7_COST_ANALYSIS.md)
+**Estimated monthly cost (current architecture):**
+
+| Item | USD/month |
+|------|-----------|
+| WAF (Web ACL $5 + 4 rules × $1) | ~9.00 |
+| KMS customer-managed key | 1.00 |
+| S3 + CloudFront + Lambda + DynamoDB + API GW (free tier) | ~0.50 |
+| **Total with WAF** | **~10.50** |
+| **Total without WAF** | **~1.50** |
+
+**Pending decision:** WAF costs more than the old EC2 did. Removing it
+(FASE7 doc recommendation for MVP) drops cost to ~$1.50/month (81%
+savings vs EC2). Alternative protections that remain: CloudFront +
+API Gateway throttling + budget alert.
 
 ---
 
