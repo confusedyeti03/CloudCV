@@ -1,201 +1,104 @@
 # CloudCV Migration Progress
 
-## Current Status: FASE 3 (Ready for Deployment)
+## Current Status: FASE 8 Complete (EC2 Retired) — Only FASE 7 (Cost Analysis) Remaining
 
 ### Objective
-Migrate CloudCV from EC2 ($8.05/month) to serverless architecture ($1.67/month) - **79% cost reduction**
+Migrate CloudCV from EC2 ($8.05/month) to serverless architecture - **fully serverless as of 2026-07-05**
 
 ---
 
 ## Completed Phases
 
-### FASE 1: Analysis & Strategy
+### FASE 1: Analysis & Strategy ✅
 - Evaluated AWS 7R migration strategies
 - Selected: Refactor (S3 + CloudFront + Lambda + DynamoDB)
-- Defined Well-Architected Framework principles
 
-### FASE 2: Static Assets (S3 + CloudFront)
-- S3 bucket for HTML/CSS/JS/assets
-- CloudFront CDN distribution
-- Cost: $0.52/month
-- Status: ✅ Complete
+### FASE 2: Static Assets (S3 + CloudFront) ✅
+- S3 bucket with website configuration (directory index serving)
+- CloudFront CDN with S3 website endpoint origin
+- Custom domain (lnoval.dev) via ACM + Cloudflare DNS
 
-### FASE 3: Serverless API (Lambda + DynamoDB + API Gateway)
-- **3 Lambda Functions (Python 3.11):**
-  - `cv_handler`: GET /cv/{language} + PDF generation (30s timeout, 512MB)
-  - `visit_counter`: POST /visits counter tracking (5s timeout, 128MB)
-  - `projects_handler`: GET /projects filtering (10s timeout, 256MB)
+### FASE 3: Serverless API (Lambda + DynamoDB + API Gateway) ✅ DEPLOYED
+- 3 Lambda functions: cv_handler, visit_counter, projects_handler
+- 3 DynamoDB tables: visits, cv_cache, projects_cache (pay-per-request)
+- API Gateway HTTP API with CORS
+- CloudWatch alarms for Lambda errors/throttles and DynamoDB
 
-- **DynamoDB Tables (Pay-per-Request):**
-  - `visits`: Visit tracking with 90-day TTL
-  - `cv_cache`: CV HTML cache with variable TTL
-  - `projects_cache`: Projects JSON cache
+### FASE 4: PDF Generation ✅ (simplified)
+- Skipped ECS Fargate — PDFs pre-generated locally with ReportLab
+- Source data: `cv/data/cv_{ca,en,es}.yml`
+- Generator: `scripts/generate_pdfs.py` → outputs to `cv/`
+- PDFs served statically from S3 at `/cv/cv_*.pdf`
 
-- **API Gateway HTTP API:**
-  - 5 routes: GET /cv/{language}, GET /projects, POST /visits, OPTIONS
-  - CORS enabled for lnoval.dev domains
-  - CloudWatch access logging
+### FASE 5: Security ✅ DEPLOYED
+- WAF Web ACL on CloudFront
+- CloudTrail audit logging
+- ACM certificate (TLS 1.2+, SNI)
 
-- **Monitoring:**
-  - CloudWatch alarms for Lambda errors & throttles
-  - DynamoDB throttling alerts
-  - 7-day log retention
+### FASE 6: Assets Upload & Validation ✅
+- All pages live with consistent pill-nav + hero-card styling:
+  - `/` — Home (hero card, social links)
+  - `/cv/` — Embedded PDF viewer + download buttons (CA/EN/ES)
+  - `/portfolio/` — Projects, challenges, achievements
+- Absolute paths for CSS/JS/assets (fixes subdirectory styling)
 
-- **Code Status:**
-  - `lambda/cv_handler/index.py` - ✅ Complete
-  - `lambda/visit_counter/index.py` - ✅ Complete
-  - `lambda/projects_handler/index.py` - ✅ Complete
-  - `lambda_layer/` with requests - ✅ Complete
-  - All .zip packages created - ✅ Complete
-  - Terraform .tf files - ✅ Complete
-
-- **Cost:** $1.15/month
-- **Total (FASE 2+3):** $1.67/month
-- **Status:** ⏳ Ready to deploy (AWS credentials required)
+### FASE 8: EC2 Retirement ✅ (2026-07-05)
+- Destroyed via Terraform (26 resources): EC2 instance, Elastic IP, VPC,
+  subnet, IGW, route table, security group, EC2 IAM role/profile/policies,
+  DLM snapshot policy, EC2 CloudWatch alarms, Nginx/system log groups
+- Deleted 11 old EBS snapshots; kept newest (snap-06c068545b602bee8,
+  2026-07-05) as temporary rollback — delete after confidence period
+- Removed legacy code: `ansible/`, `cv-service/` (Flask/Docker service),
+  `templates/`, obsolete scripts (run-local.sh, setup-wsl.sh,
+  update-inventory.sh, test_cv_service.py)
+- CV YAML data moved: `cv-service/data/` → `cv/data/`
+- Verified zero downtime: all pages HTTP 200 before and after
 
 ---
 
-## Pending Phases (Documented)
+## Remaining Phase
 
-### FASE 4: Complex Backend (ECS Fargate) - *Optional*
-- PDF generation with weasyprint
-- Cost: $0.25/month (Spot instances) or skip for MVP
-- Docs: [FASE4_CONTAINERIZATION.md](terraform/FASE4_CONTAINERIZATION.md)
-- Recommendation: Skip for MVP (pre-generate PDFs instead)
-
-### FASE 5: Security (WAF + Authentication) - *Optional*
-- CloudFront WAF rules
-- API key/JWT authentication
-- CloudTrail audit logging
-- Cost: $5.00/month
-- Docs: [FASE5_SECURITY.md](terraform/FASE5_SECURITY.md)
-- Recommendation: Skip for MVP (add later if needed)
-
-### FASE 6: Assets & Validation
-- S3 asset upload procedures
-- API endpoint testing
-- End-to-end validation checklist
-- Docs: [FASE6_DEPLOYMENT.md](terraform/FASE6_DEPLOYMENT.md)
-
-### FASE 7: Cost Analysis & Monitoring
-- CloudWatch dashboards
-- Cost alerts and optimization
-- Monthly cost tracking
+### FASE 7: Cost Analysis & Monitoring ⏳
+- Verify actual monthly cost in Cost Explorer (next billing cycle)
+- CloudWatch dashboard (Lambda, DynamoDB, CloudFront cache hit rate)
+- Evaluate WAF cost (~$5/month) vs benefit — main optimization candidate
+- Budget alert already active (terraform/budget.tf)
 - Docs: [FASE7_COST_ANALYSIS.md](terraform/FASE7_COST_ANALYSIS.md)
 
-### FASE 8: EC2 Retirement
-- Terminate EC2 instance
-- Release Elastic IP
-- Archive Ansible playbooks
-- Update DNS records
-- Cost: 76% savings achieved
-- Docs: [FASE8_RETIREMENT.md](terraform/FASE8_RETIREMENT.md)
-
 ---
 
-## Next Steps
+## Architecture (current)
 
-1. **Configure AWS Credentials:**
-   ```bash
-   aws configure
-   # Enter: Access Key ID, Secret Access Key, region (eu-west-1), format (json)
-   ```
-
-2. **Deploy FASE 3:**
-   ```bash
-   cd terraform
-   terraform plan -out=tfplan3
-   terraform apply tfplan3
-   ```
-
-3. **Validate Deployment:**
-   ```bash
-   # Get API URL
-   API_URL=$(terraform output -raw api_invoke_url)
-   
-   # Test endpoints
-   curl $API_URL/health
-   curl $API_URL/cv/en
-   curl $API_URL/projects
-   ```
-
-4. **Proceed to FASE 4-8:**
-   - FASE 4: Evaluate PDF generation needs (Fargate vs pre-generation)
-   - FASE 5: Decide on WAF/security layer (required for production)
-   - FASE 6: Upload assets and validate
-   - FASE 7: Monitor costs and optimize
-   - FASE 8: Retire EC2 instance
-
----
+```
+Cloudflare DNS (CNAME) → CloudFront (WAF, ACM TLS)
+                             │
+              ┌──────────────┴──────────────┐
+              │                             │
+     S3 website endpoint           API Gateway HTTP API
+     (HTML/CSS/JS/PDFs)                     │
+                              ┌─────────────┼─────────────┐
+                         cv_handler   visit_counter  projects_handler
+                              └──────── DynamoDB ─────────┘
+                                 (visits, cv_cache, projects_cache)
+```
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `terraform/lambda.tf` | Lambda functions + IAM + CloudWatch |
-| `terraform/dynamodb.tf` | DynamoDB tables + TTL + alarms |
+| `terraform/cloudfront.tf` | CDN + cache policies + WAF association |
+| `terraform/s3.tf` | Assets bucket + website config + public policy |
+| `terraform/lambda.tf` | Lambda functions + IAM |
+| `terraform/dynamodb.tf` | Tables + TTL + alarms |
 | `terraform/api-gateway.tf` | HTTP API + routes + CORS |
-| `terraform/s3.tf` | S3 bucket + CloudFront integration |
-| `terraform/cloudfront.tf` | CloudFront distribution + caching |
-| `lambda/cv_handler/index.py` | CV API handler |
-| `lambda/visit_counter/index.py` | Visit tracking handler |
-| `lambda/projects_handler/index.py` | Projects API handler |
-| `terraform/FASE4_CONTAINERIZATION.md` | ECS Fargate implementation |
-| `terraform/FASE5_SECURITY.md` | WAF + authentication setup |
-| `terraform/FASE6_DEPLOYMENT.md` | Asset upload + validation |
-| `terraform/FASE7_COST_ANALYSIS.md` | Monitoring + optimization |
-| `terraform/FASE8_RETIREMENT.md` | EC2 decommissioning |
+| `terraform/security.tf` / `waf.tf` / `acm.tf` | FASE 5 security layer |
+| `terraform/dns.tf` | Cloudflare records (CloudFront CNAME) |
+| `terraform/budget.tf` | Monthly budget alert |
+| `cv/data/cv_*.yml` | CV source data (single source of truth) |
+| `scripts/generate_pdfs.py` | Regenerate PDFs from YAML |
+| `scripts/upload-assets-to-s3.ps1` | Deploy web assets |
 
 ---
 
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│      CloudFront (FASE 2)                │
-│  - Static assets caching                │
-│  - $0.52/month                          │
-└──────────────┬──────────────────────────┘
-               │
-       ┌───────┴────────┐
-       │                │
-   ┌───▼──────┐    ┌───▼──────┐
-   │    S3    │    │   API    │
-   │ Assets   │    │ Gateway  │
-   └──────────┘    └───┬──────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-   ┌────▼────┐  ┌─────▼─────┐  ┌────▼────┐
-   │ Lambda  │  │ DynamoDB  │  │ Lambda  │
-   │  cv_    │  │ Tables    │  │ visit_  │
-   │ handler │  │ (3 tables)│  │ counter │
-   └─────────┘  └───────────┘  └─────────┘
-   (PDF/HTML)    (Cache/Visits) (Analytics)
-   
-   $1.15/month                $0.52/month
-```
-
----
-
-## Commit Strategy
-
-- **Commit 1 (FASE 3):** Lambda, DynamoDB, API Gateway infrastructure
-- **Commit 2 (Documentation):** FASE 4-8 implementation guides
-- **Commit 3 (Post-FASE3):** Terraform apply results + validation
-- **Commit 4 (FASE 4+):** Additional phases implementation
-
----
-
-## Environment
-
-- **OS:** Windows 11 Pro
-- **AWS Region:** eu-west-1 (Ireland)
-- **Python:** 3.11 (Lambda)
-- **Terraform:** >= 1.0
-- **Cost Target:** $1.67/month
-
----
-
-**Last Updated:** 2026-06-30
-**Status:** FASE 3 ready for AWS deployment
+**Last Updated:** 2026-07-05
+**Status:** Fully serverless. EC2 retired with zero downtime.

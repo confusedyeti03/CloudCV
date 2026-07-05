@@ -13,24 +13,6 @@ variable "project_name" {
   default     = "lnoval-cv"
 }
 
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t4g.nano"
-}
-
-variable "ssh_key_name" {
-  description = "SSH key name for EC2 instances"
-  type        = string
-  default     = "vockey"
-}
-
-variable "ssh_port" {
-  description = "Custom SSH port"
-  type        = number
-  default     = 2222
-}
-
 variable "domain" {
   description = "Domain name"
   type        = string

@@ -30,12 +30,16 @@ resource "aws_cloudfront_distribution" "static" {
   web_acl_id          = aws_wafv2_web_acl.cloudfront.arn
 
   origin {
-    domain_name = aws_s3_bucket.assets.bucket_regional_domain_name
+    # Use S3 website endpoint to enable directory index serving (/cv/ → /cv/index.html)
+    domain_name = "${aws_s3_bucket.assets.id}.s3-website-${var.aws_region}.amazonaws.com"
     origin_id   = "S3Assets"
 
-    # Use OAI to access S3 privately (no public bucket access required)
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.s3.cloudfront_access_identity_path
+    # Website endpoint uses HTTP (CloudFront handles HTTPS)
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
@@ -51,6 +55,13 @@ resource "aws_cloudfront_distribution" "static" {
 
     # Compress response automatically (Gzip, Brotli)
     compress = true
+
+    # CloudFront Function disabled - not compatible with S3 origin
+    # Use custom error response instead
+    # function_association {
+    #   event_type   = "viewer-request"
+    #   function_arn = aws_cloudfront_function.directory_index.arn
+    # }
   }
 
   # Cache behavior for index.html (no cache, always fresh)
@@ -188,6 +199,14 @@ resource "aws_cloudfront_distribution" "static" {
     cloudfront_default_certificate = false
   }
 
+  # Custom error response: serve root index.html for 403 errors (directories)
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 300
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
@@ -296,6 +315,26 @@ resource "aws_cloudfront_cache_policy" "static" {
       cookie_behavior = "none"
     }
   }
+}
+
+# CloudFront Function: Route directories to their index.html
+resource "aws_cloudfront_function" "directory_index" {
+  name    = "${var.project_name}-directory-index"
+  runtime = "cloudfront-js-1.0"
+  publish = true
+  code    = <<-EOT
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+
+    // If URI ends with /, append index.html
+    if (uri.slice(-1) === '/') {
+        request.uri = uri + 'index.html';
+    }
+
+    return request;
+}
+EOT
 }
 
 output "cloudfront_domain_name" {

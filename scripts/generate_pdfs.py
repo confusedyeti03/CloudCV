@@ -23,7 +23,7 @@ from datetime import datetime
 
 # Directories
 PROJECT_ROOT = Path(__file__).parent.parent
-CV_DATA_DIR = PROJECT_ROOT / "cv-service" / "data"
+CV_DATA_DIR = PROJECT_ROOT / "cv" / "data"
 OUTPUT_DIR = PROJECT_ROOT / "cv"
 
 # Create output directory if it doesn't exist

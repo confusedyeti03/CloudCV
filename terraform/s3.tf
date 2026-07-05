@@ -35,14 +35,14 @@ resource "aws_s3_bucket_versioning" "assets" {
   }
 }
 
-# Block all public access (CloudFront will access via OAI)
+# Allow public read access (for S3 website endpoint used by CloudFront)
 resource "aws_s3_bucket_public_access_block" "assets" {
   bucket = aws_s3_bucket.assets.id
 
-  block_public_acls       = true
-  block_public_policy     = true
+  block_public_acls       = false
+  block_public_policy     = false
   ignore_public_acls      = true
-  restrict_public_buckets = true
+  restrict_public_buckets = false
 }
 
 # Enable server-side encryption with AES-256 (default AWS managed key)
@@ -92,7 +92,7 @@ resource "aws_s3_bucket_cors_configuration" "assets" {
   }
 }
 
-# S3 bucket policy: Allow CloudFront OAI to read objects
+# S3 bucket policy: Allow public read access (used by CloudFront website endpoint)
 resource "aws_s3_bucket_policy" "assets" {
   bucket = aws_s3_bucket.assets.id
 
@@ -100,23 +100,28 @@ resource "aws_s3_bucket_policy" "assets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowCloudFrontOAI"
-        Effect = "Allow"
-        Principal = {
-          AWS = aws_cloudfront_origin_access_identity.s3.iam_arn
-        }
-        Action   = ["s3:GetObject"]
-        Resource = "${aws_s3_bucket.assets.arn}/*"
-      },
-      {
-        Sid    = "AllowPublicReadCVPDF"
+        Sid    = "PublicReadGetObject"
         Effect = "Allow"
         Principal = "*"
         Action   = ["s3:GetObject"]
-        Resource = "${aws_s3_bucket.assets.arn}/cv/*.pdf"
+        Resource = "${aws_s3_bucket.assets.arn}/*"
       }
     ]
   })
+}
+
+# S3 Website Configuration - enables directory index serving
+# When user requests /cv/, S3 automatically serves /cv/index.html
+resource "aws_s3_bucket_website_configuration" "assets" {
+  bucket = aws_s3_bucket.assets.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
 }
 
 # Output bucket name for use in other resources
