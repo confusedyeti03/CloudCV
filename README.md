@@ -14,15 +14,14 @@ Cloudflare DNS (CNAME) → CloudFront (ACM TLS)
               │                             │
      S3 website endpoint            API Gateway (/api/*)
      (HTML/CSS/JS/PDFs)                     │
-                              ┌─────────────┼─────────────┐
-                         cv_handler   visit_counter  projects_handler
-                              └──────── DynamoDB ─────────┘
-                                 (visits, cv_cache, projects_cache)
+                                      visit_counter (Lambda)
+                                            │
+                                    DynamoDB (visits)
 ```
 
 - **Frontend**: Static HTML/CSS/JS on S3, served worldwide via CloudFront
 - **API**: CloudFront proxies `/api/*` to API Gateway → Lambda (Python 3.11)
-- **Database**: DynamoDB pay-per-request (visit counter, caches)
+- **Database**: DynamoDB pay-per-request (visit counter)
 - **DNS**: Cloudflare (DNS-only mode), TLS via ACM
 - **Audit**: CloudTrail + CloudWatch dashboard and alarms
 - **IaC**: Terraform (remote state in S3)
@@ -38,12 +37,9 @@ CloudCV/
 │   ├── scripts/            # Shared JS (visit counter)
 │   └── styles/             # Shared CSS
 ├── cv/
-│   ├── data/               # CV source data (YAML, single source of truth)
-│   └── cv_*.pdf            # Generated PDFs (uploaded to S3)
-├── lambda/                 # Lambda function sources (Python 3.11)
-│   ├── cv_handler/         # GET /cv/{language}
-│   ├── visit_counter/      # POST /visits
-│   └── projects_handler/   # GET /projects
+│   └── data/               # CV source data (YAML, single source of truth)
+├── lambda/
+│   └── visit_counter/      # POST /visits (Python 3.11)
 ├── terraform/              # Infrastructure as Code
 │   ├── cloudfront.tf       # CDN, cache policies, /api/* proxy
 │   ├── s3.tf               # Assets bucket (website endpoint)
@@ -94,8 +90,8 @@ Bucket and distribution ID come from `terraform output`.
 ### 3. CV PDFs (when the YAML data changes)
 
 ```powershell
-python scripts/generate_pdfs.py
-aws s3 cp cv/ s3://<assets-bucket>/cv/ --recursive --exclude "*" --include "*.pdf"
+python scripts/generate_pdfs.py   # writes to web/cv/
+aws s3 cp web/cv/ s3://<assets-bucket>/cv/ --recursive --exclude "*" --include "*.pdf"
 ```
 
 ### 4. Lambda changes

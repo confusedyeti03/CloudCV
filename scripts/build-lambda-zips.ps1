@@ -1,4 +1,4 @@
-# Build Lambda function ZIP files for FASE 5
+# Build Lambda function ZIP files
 # Usage: .\scripts\build-lambda-zips.ps1
 
 Set-Location (Split-Path -Parent (Split-Path -Parent $PSCommandPath))
@@ -6,10 +6,7 @@ Set-Location (Split-Path -Parent (Split-Path -Parent $PSCommandPath))
 Write-Host "Building Lambda function ZIP files..." -ForegroundColor Green
 
 $lambdaFunctions = @(
-    @{Path = "lambda/cv_handler"; Output = "terraform/lambda_cv_handler.zip"},
-    @{Path = "lambda/visit_counter"; Output = "terraform/lambda_visit_counter.zip"},
-    @{Path = "lambda/projects_handler"; Output = "terraform/lambda_projects_handler.zip"},
-    @{Path = "lambda/api_authorizer"; Output = "terraform/lambda_api_authorizer.zip"}
+    @{Path = "lambda/visit_counter"; Output = "terraform/lambda_visit_counter.zip"}
 )
 
 $allSuccess = $true

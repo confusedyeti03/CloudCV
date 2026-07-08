@@ -1,20 +1,11 @@
 # AWS DynamoDB Tables
-# Purpose: Serverless database for CV cache, projects cache, and visit analytics
+# Purpose: Serverless database for visit analytics
 #
-# Table 1: visits
-# - Records page visits for analytics
+# Table: visits
+# - Aggregate visit counter per page (sort key 0, never expires)
 # - Partition key: page_id, Sort key: timestamp
-# - TTL enabled: records auto-delete after 90 days
-#
-# Table 2: cv_cache
-# - Caches CV HTML by language
-# - Partition key: language (ca, es, en)
-#
-# Table 3: projects_cache
-# - Caches portfolio projects by type
-# - Partition key: project_type (personal, challenges, etc.)
+# - TTL enabled for any future per-visit items
 
-# DynamoDB Table 1: Visits
 resource "aws_dynamodb_table" "visits" {
   name           = "${var.project_name}-visits"
   billing_mode   = "PAY_PER_REQUEST"
@@ -42,58 +33,14 @@ resource "aws_dynamodb_table" "visits" {
   }
 }
 
-# DynamoDB Table 2: CV Cache
-resource "aws_dynamodb_table" "cv_cache" {
-  name           = "${var.project_name}-cv-cache"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "language"
-
-  attribute {
-    name = "language"
-    type = "S"  # String (ca, es, en)
-  }
-
-  ttl {
-    attribute_name = "expiration_time"
-    enabled        = true
-  }
-
-  tags = {
-    Name        = "${var.project_name}-cv-cache-table"
-    Environment = "production"
-  }
-}
-
-# DynamoDB Table 3: Projects Cache
-resource "aws_dynamodb_table" "projects_cache" {
-  name           = "${var.project_name}-projects-cache"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "project_type"
-
-  attribute {
-    name = "project_type"
-    type = "S"  # String (personal, challenges, etc.)
-  }
-
-  ttl {
-    attribute_name = "expiration_time"
-    enabled        = true
-  }
-
-  tags = {
-    Name        = "${var.project_name}-projects-cache-table"
-    Environment = "production"
-  }
-}
-
 # CloudWatch Alarms for DynamoDB
 
-# Alarm: DynamoDB throttling on visits table
+# Alarm: DynamoDB write throttling on visits table
 resource "aws_cloudwatch_metric_alarm" "dynamodb_throttle_visits" {
   alarm_name          = "${var.project_name}-dynamodb-visits-throttles"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
-  metric_name         = "ConsumedWriteCapacityUnits"
+  metric_name         = "WriteThrottleEvents"
   namespace           = "AWS/DynamoDB"
   period              = 60
   statistic           = "Sum"
@@ -128,14 +75,4 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_user_errors" {
 output "visits_table_name" {
   description = "Name of DynamoDB visits table"
   value       = aws_dynamodb_table.visits.name
-}
-
-output "cv_cache_table_name" {
-  description = "Name of DynamoDB CV cache table"
-  value       = aws_dynamodb_table.cv_cache.name
-}
-
-output "projects_cache_table_name" {
-  description = "Name of DynamoDB projects cache table"
-  value       = aws_dynamodb_table.projects_cache.name
 }

@@ -6,9 +6,9 @@ Usage:
     python scripts/generate_pdfs.py
 
 Output:
-    cv/cv_en.pdf
-    cv/cv_es.pdf
-    cv/cv_ca.pdf
+    web/cv/cv_en.pdf
+    web/cv/cv_es.pdf
+    web/cv/cv_ca.pdf
 """
 
 import os
@@ -24,7 +24,7 @@ from datetime import datetime
 # Directories
 PROJECT_ROOT = Path(__file__).parent.parent
 CV_DATA_DIR = PROJECT_ROOT / "cv" / "data"
-OUTPUT_DIR = PROJECT_ROOT / "cv"
+OUTPUT_DIR = PROJECT_ROOT / "web" / "cv"
 
 # Create output directory if it doesn't exist
 OUTPUT_DIR.mkdir(exist_ok=True)

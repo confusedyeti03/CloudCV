@@ -1,5 +1,5 @@
 # AWS API Gateway HTTP API
-# FASE 5: Added security with WAF and optional API key authentication
+# Single route: POST /visits (visit counter), proxied by CloudFront at /api/visits
 
 # CloudWatch Log Group for API Gateway
 resource "aws_cloudwatch_log_group" "api_gateway" {
@@ -48,48 +48,7 @@ resource "aws_apigatewayv2_stage" "api_stage" {
   depends_on = [aws_cloudwatch_log_group.api_gateway]
 }
 
-# Route: GET /cv/{language}
-resource "aws_apigatewayv2_route" "cv_get" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  route_key          = "GET /cv/{language}"
-  authorization_type = "NONE"
-  target             = "integrations/${aws_apigatewayv2_integration.cv_handler.id}"
-}
-
-# Route: GET /cv/{language}/pdf
-resource "aws_apigatewayv2_route" "cv_pdf_get" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  route_key          = "GET /cv/{language}/pdf"
-  authorization_type = "NONE"
-  target             = "integrations/${aws_apigatewayv2_integration.cv_handler.id}"
-}
-
-# Integration: Lambda for /cv/{language}
-resource "aws_apigatewayv2_integration" "cv_handler" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  integration_type   = "AWS_PROXY"
-  integration_uri    = aws_lambda_function.cv_handler.invoke_arn
-  payload_format_version = "2.0"
-}
-
-# Route: GET /projects
-resource "aws_apigatewayv2_route" "projects_list" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  route_key          = "GET /projects"
-  authorization_type = "NONE"
-  target             = "integrations/${aws_apigatewayv2_integration.projects_handler.id}"
-}
-
-# Integration: Lambda for /projects
-resource "aws_apigatewayv2_integration" "projects_handler" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  integration_type   = "AWS_PROXY"
-  integration_uri    = aws_lambda_function.projects_handler.invoke_arn
-  payload_format_version = "2.0"
-}
-
-# Route: POST /visits (Protected - requires API key)
-# FASE 5: Add API key validation via custom header check
+# Route: POST /visits
 resource "aws_apigatewayv2_route" "visits_post" {
   api_id             = aws_apigatewayv2_api.cv_api.id
   route_key          = "POST /visits"

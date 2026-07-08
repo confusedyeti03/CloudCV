@@ -19,9 +19,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           stat   = "Sum"
           period = 3600
           metrics = [
-            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.cv_handler.function_name],
-            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.visit_counter.function_name],
-            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.projects_handler.function_name]
+            ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.visit_counter.function_name]
           ]
         }
       },
@@ -37,10 +35,8 @@ resource "aws_cloudwatch_dashboard" "main" {
           stat   = "Sum"
           period = 3600
           metrics = [
-            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.cv_handler.function_name],
             ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.visit_counter.function_name],
-            ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.projects_handler.function_name],
-            ["AWS/Lambda", "Throttles", "FunctionName", aws_lambda_function.cv_handler.function_name]
+            ["AWS/Lambda", "Throttles", "FunctionName", aws_lambda_function.visit_counter.function_name]
           ]
         }
       },
@@ -56,9 +52,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           stat   = "Average"
           period = 3600
           metrics = [
-            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.cv_handler.function_name],
-            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.visit_counter.function_name],
-            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.projects_handler.function_name]
+            ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.visit_counter.function_name]
           ]
         }
       },
@@ -93,9 +87,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           period = 3600
           metrics = [
             ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.visits.name],
-            ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", aws_dynamodb_table.visits.name],
-            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.cv_cache.name],
-            ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", aws_dynamodb_table.projects_cache.name]
+            ["AWS/DynamoDB", "ConsumedWriteCapacityUnits", "TableName", aws_dynamodb_table.visits.name]
           ]
         }
       },
