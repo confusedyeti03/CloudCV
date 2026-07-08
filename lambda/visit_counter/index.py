@@ -1,36 +1,40 @@
 import json
 import boto3
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb')
 
 visits_table = dynamodb.Table(os.environ.get('DDB_VISITS_TABLE', 'lnoval-cv-visits'))
 api_key = os.environ.get('API_KEY', '')
 
+# Sort key reserved for the per-page aggregate counter item.
+# It has no TTL so the accumulated count never expires.
+COUNTER_SORT_KEY = 0
+
+
 def handler(event, context):
     """
     Lambda handler for visit tracking
     POST /visits
     Headers: Authorization: Bearer <api-key> OR X-API-Key: <api-key>
-    Body: { "page_id": "portfolio", "metadata": {...} }
+    Body: { "page_id": "home" }
+    Returns the accumulated visit_count for the page.
     """
     try:
-        # FASE 5: Validate API key
-        headers = event.get('headers', {})
+        # FASE 5: Validate API key (skipped when API_KEY is not configured)
+        headers = event.get('headers', {}) or {}
         auth_header = headers.get('authorization', '') or headers.get('Authorization', '')
         api_key_header = headers.get('x-api-key', '') or headers.get('X-API-Key', '')
 
-        # Support "Bearer <api-key>" format or direct X-API-Key header
         provided_key = None
         if auth_header.startswith('Bearer '):
             provided_key = auth_header[7:]
         elif api_key_header:
             provided_key = api_key_header
 
-        # Validate API key (if configured)
         if api_key and provided_key != api_key:
-            print(f"Unauthorized visit tracking attempt")
+            print("Unauthorized visit tracking attempt")
             return {
                 'statusCode': 401,
                 'headers': {'Content-Type': 'application/json'},
@@ -38,39 +42,31 @@ def handler(event, context):
             }
 
         # Parse request body
-        body_str = event.get('body', '{}')
-        if isinstance(body_str, str):
-            body = json.loads(body_str)
-        else:
-            body = body_str
+        body_str = event.get('body') or '{}'
+        body = json.loads(body_str) if isinstance(body_str, str) else body_str
 
         page_id = body.get('page_id', 'unknown')
-        user_agent = event.get('headers', {}).get('user-agent', 'unknown')
-        source_ip = event.get('requestContext', {}).get('identity', {}).get('sourceIp', 'unknown')
+        user_agent = headers.get('user-agent', 'unknown')
+        # HTTP API payload v2 exposes the client IP under requestContext.http
+        source_ip = event.get('requestContext', {}).get('http', {}).get('sourceIp', 'unknown')
 
-        # Get current timestamp
-        timestamp = int(datetime.now().timestamp())
-
-        # Calculate TTL: 90 days from now
-        ttl_timestamp = int((datetime.now() + timedelta(days=90)).timestamp())
-
-        # Update visit counter in DynamoDB
+        # Increment the aggregate counter for this page (atomic ADD)
         response = visits_table.update_item(
             Key={
                 'page_id': page_id,
-                'timestamp': timestamp
+                'timestamp': COUNTER_SORT_KEY
             },
-            UpdateExpression='ADD visit_count :inc SET expiration_time = :ttl, last_user_agent = :ua, last_source_ip = :ip',
+            UpdateExpression='ADD visit_count :inc SET last_visit_at = :now, last_user_agent = :ua, last_source_ip = :ip',
             ExpressionAttributeValues={
                 ':inc': 1,
-                ':ttl': ttl_timestamp,
+                ':now': datetime.utcnow().isoformat(),
                 ':ua': user_agent,
                 ':ip': source_ip
             },
             ReturnValues='UPDATED_NEW'
         )
 
-        visit_count = response['Attributes'].get('visit_count', 1)
+        visit_count = int(response['Attributes']['visit_count'])
         print(f"Visit recorded for page: {page_id}, count: {visit_count}")
 
         return {
@@ -82,7 +78,7 @@ def handler(event, context):
             'body': json.dumps({
                 'message': 'Visit recorded',
                 'page_id': page_id,
-                'visit_count': int(visit_count) if visit_count else 1
+                'visit_count': visit_count
             })
         }
 

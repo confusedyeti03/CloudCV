@@ -1,14 +1,10 @@
-# CloudFront Origin Access Identity (OAI)
-# This allows CloudFront to access S3 objects without making bucket public
-# Security principle: Least privilege access
-
-resource "aws_cloudfront_origin_access_identity" "s3" {
-  comment = "OAI for ${var.project_name} S3 bucket"
+# AWS managed policies for the API behavior (no caching, forward everything)
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
 }
 
-output "cloudfront_oai_iam_arn" {
-  description = "IAM ARN of CloudFront OAI (for S3 bucket policy)"
-  value       = aws_cloudfront_origin_access_identity.s3.iam_arn
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
 }
 
 # CloudFront Distribution for static content
@@ -27,7 +23,6 @@ resource "aws_cloudfront_distribution" "static" {
   default_root_object = "index.html"
   comment             = "CloudCV static content CDN"
   price_class         = "PriceClass_100" # US, Europe, Asia (best price/coverage balance)
-  web_acl_id          = aws_wafv2_web_acl.cloudfront.arn
 
   origin {
     # Use S3 website endpoint to enable directory index serving (/cv/ → /cv/index.html)
@@ -39,6 +34,20 @@ resource "aws_cloudfront_distribution" "static" {
       http_port              = 80
       https_port             = 443
       origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  origin {
+    # API Gateway HTTP API (visit counter and other dynamic endpoints)
+    domain_name = "${aws_apigatewayv2_api.cv_api.id}.execute-api.${var.aws_region}.amazonaws.com"
+    origin_id   = "ApiGateway"
+    origin_path = "/prod"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
@@ -55,13 +64,27 @@ resource "aws_cloudfront_distribution" "static" {
 
     # Compress response automatically (Gzip, Brotli)
     compress = true
+  }
 
-    # CloudFront Function disabled - not compatible with S3 origin
-    # Use custom error response instead
-    # function_association {
-    #   event_type   = "viewer-request"
-    #   function_arn = aws_cloudfront_function.directory_index.arn
-    # }
+  # API behavior: proxy /api/* to API Gateway (dynamic, never cached)
+  # The viewer-request function strips the /api prefix so
+  # /api/visits reaches the origin as /prod/visits
+  ordered_cache_behavior {
+    target_origin_id = "ApiGateway"
+    path_pattern     = "/api/*"
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.api_rewrite.arn
+    }
   }
 
   # Cache behavior for index.html (no cache, always fresh)
@@ -199,14 +222,6 @@ resource "aws_cloudfront_distribution" "static" {
     cloudfront_default_certificate = false
   }
 
-  # Custom error response: serve root index.html for 403 errors (directories)
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 300
-  }
-
   restrictions {
     geo_restriction {
       restriction_type = "none"
@@ -317,21 +332,15 @@ resource "aws_cloudfront_cache_policy" "static" {
   }
 }
 
-# CloudFront Function: Route directories to their index.html
-resource "aws_cloudfront_function" "directory_index" {
-  name    = "${var.project_name}-directory-index"
+# CloudFront Function: strip the /api prefix before forwarding to API Gateway
+resource "aws_cloudfront_function" "api_rewrite" {
+  name    = "${var.project_name}-api-rewrite"
   runtime = "cloudfront-js-1.0"
   publish = true
   code    = <<-EOT
 function handler(event) {
     var request = event.request;
-    var uri = request.uri;
-
-    // If URI ends with /, append index.html
-    if (uri.slice(-1) === '/') {
-        request.uri = uri + 'index.html';
-    }
-
+    request.uri = request.uri.replace(/^\/api/, '');
     return request;
 }
 EOT

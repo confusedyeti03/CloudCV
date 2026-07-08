@@ -31,9 +31,9 @@ Migrate CloudCV from EC2 ($8.05/month) to serverless architecture - **fully serv
 - PDFs served statically from S3 at `/cv/cv_*.pdf`
 
 ### FASE 5: Security ✅ DEPLOYED
-- WAF Web ACL on CloudFront
 - CloudTrail audit logging
 - ACM certificate (TLS 1.2+, SNI)
+- WAF was deployed here but removed in FASE 7 (cost ~$9/month)
 
 ### FASE 6: Assets Upload & Validation ✅
 - All pages live with consistent pill-nav + hero-card styling:
@@ -65,18 +65,49 @@ Migrate CloudCV from EC2 ($8.05/month) to serverless architecture - **fully serv
 
 **Estimated monthly cost (current architecture):**
 
+**WAF removed (2026-07-05):** it cost ~$9/month (Web ACL $5 + 4 rules
+× $1) — more than the old EC2. Disassociated from CloudFront (in-place
+update, zero downtime), then Web ACL + log group + alarm destroyed.
+Remaining protections: HTTPS-only, API Gateway throttling, budget alert.
+
+**Estimated monthly cost (final architecture):**
+
 | Item | USD/month |
 |------|-----------|
-| WAF (Web ACL $5 + 4 rules × $1) | ~9.00 |
 | KMS customer-managed key | 1.00 |
 | S3 + CloudFront + Lambda + DynamoDB + API GW (free tier) | ~0.50 |
-| **Total with WAF** | **~10.50** |
-| **Total without WAF** | **~1.50** |
+| **Total** | **~1.50** (81% savings vs EC2 $8.05) |
 
-**Pending decision:** WAF costs more than the old EC2 did. Removing it
-(FASE7 doc recommendation for MVP) drops cost to ~$1.50/month (81%
-savings vs EC2). Alternative protections that remain: CloudFront +
-API Gateway throttling + budget alert.
+---
+
+## Post-migration fixes (2026-07-05)
+
+- **Visit counter connected and fixed** — it was broken in three ways:
+  1. No CloudFront route for `/api/*`: added API Gateway origin +
+     `/api/*` behavior (POST allowed, caching disabled) with a
+     CloudFront function stripping the `/api` prefix (`/api/visits` →
+     `/prod/visits`)
+  2. Lambda keyed items by current timestamp, so every visit created a
+     new item with count 1: now increments an aggregate item per page
+     (sort key 0, no TTL) atomically
+  3. `visits.js` read `data.count` but Lambda returns `visit_count`;
+     also now sends `page_id` derived from the path and tolerates pages
+     without the counter element
+  - Verified end-to-end: `POST https://lnoval.dev/api/visits` returns
+    JSON and increments (1 → 2)
+- **Orphan cleanup**: removed unused CloudFront OAI and the
+  never-associated `directory_index` function
+- **README.md rewritten** for the serverless architecture (was EC2-era)
+- **Dead config removed (Terraform audit)**:
+  - S3 access logging that never delivered (required an ACL that was
+    commented out) and would have exposed logs publicly if it had
+  - CloudTrail→CloudWatch log group, IAM role and policy the trail
+    never referenced, plus the `unauthorized_api_calls` alarm watching
+    a metric nothing publishes
+- **Soft-404 fixed**: new styled `web/404.html`, S3 website
+  `error_document` now returns it with a real 404 status; removed the
+  CloudFront 403→200 index.html rewrite that masked all errors as the
+  homepage
 
 ---
 

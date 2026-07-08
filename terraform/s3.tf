@@ -6,7 +6,7 @@
 # - Images (WebP optimized)
 # - Assets (badges, certificates, photos)
 #
-# Access: PRIVATE (CloudFront OAI only)
+# Access: PUBLIC READ (served via CloudFront from the S3 website endpoint)
 # Versioning: Enabled (allow rollback)
 # Encryption: AES-256 (default, AWS managed)
 
@@ -19,12 +19,6 @@ resource "aws_s3_bucket" "assets" {
     Purpose     = "Static content for CloudFront"
   }
 }
-
-# Enable ACLs to allow CloudFront to write logs (deferred to FASE 6)
-# resource "aws_s3_bucket_acl" "assets" {
-#   bucket = aws_s3_bucket.assets.id
-#   acl    = "log-delivery-write"
-# }
 
 # Enable versioning for asset management and rollback capability
 resource "aws_s3_bucket_versioning" "assets" {
@@ -71,14 +65,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "assets" {
   }
 }
 
-# Enable access logging for audit trail (optional, ~$0.05/mo for small portfolio)
-resource "aws_s3_bucket_logging" "assets" {
-  bucket = aws_s3_bucket.assets.id
-
-  target_bucket = aws_s3_bucket.assets.id
-  target_prefix = "access-logs/"
-}
-
 # CORS configuration for assets accessed from different origins
 resource "aws_s3_bucket_cors_configuration" "assets" {
   bucket = aws_s3_bucket.assets.id
@@ -112,6 +98,7 @@ resource "aws_s3_bucket_policy" "assets" {
 
 # S3 Website Configuration - enables directory index serving
 # When user requests /cv/, S3 automatically serves /cv/index.html
+# Missing keys return 404.html with a real 404 status (no soft-404)
 resource "aws_s3_bucket_website_configuration" "assets" {
   bucket = aws_s3_bucket.assets.id
 
@@ -120,7 +107,7 @@ resource "aws_s3_bucket_website_configuration" "assets" {
   }
 
   error_document {
-    key = "index.html"
+    key = "404.html"
   }
 }
 

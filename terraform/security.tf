@@ -1,8 +1,6 @@
 # AWS Security Services
-# CloudTrail: Audit all AWS API calls
+# CloudTrail: Audit all AWS API calls (logs to dedicated S3 bucket)
 # KMS: Encryption key management
-# VPC Flow Logs: Network traffic logging
-# AWS Config: Configuration tracking
 
 # KMS Key for S3 bucket encryption
 resource "aws_kms_key" "s3_encryption" {
@@ -153,68 +151,6 @@ resource "aws_cloudtrail" "main" {
     Name        = "${var.project_name}-audit-trail"
     Environment = "production"
   }
-}
-
-# CloudWatch Log Group for CloudTrail
-resource "aws_cloudwatch_log_group" "cloudtrail" {
-  name              = "/aws/cloudtrail/${var.project_name}"
-  retention_in_days = 30
-
-  tags = {
-    Name = "${var.project_name}-cloudtrail-logs"
-  }
-}
-
-# IAM Role for CloudTrail to write to CloudWatch Logs
-resource "aws_iam_role" "cloudtrail_cloudwatch_role" {
-  name = "${var.project_name}-cloudtrail-cloudwatch-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudtrail.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# IAM Policy for CloudTrail CloudWatch Logs
-resource "aws_iam_role_policy" "cloudtrail_cloudwatch_policy" {
-  name = "${var.project_name}-cloudtrail-cloudwatch-policy"
-  role = aws_iam_role.cloudtrail_cloudwatch_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
-      }
-    ]
-  })
-}
-
-# CloudWatch Alarms for security events
-resource "aws_cloudwatch_metric_alarm" "unauthorized_api_calls" {
-  alarm_name          = "${var.project_name}-unauthorized-api-calls"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 1
-  metric_name         = "UnauthorizedAPICallsMetric"
-  namespace           = "CloudTrailMetrics"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 1
-  alarm_description   = "Alert on unauthorized AWS API calls"
-  treat_missing_data  = "notBreaching"
 }
 
 # Outputs

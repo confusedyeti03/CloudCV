@@ -1,25 +1,31 @@
 async function trackVisit() {
     const countElement = document.getElementById('visit-count');
-    
+    const pageId = window.location.pathname.split('/')[1] || 'home';
+
     try {
-        // Increment visit counter via API
+        // Increment visit counter via API (proxied by CloudFront to API Gateway)
         const response = await fetch('/api/visits', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ page_id: pageId })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        countElement.textContent = data.count.toLocaleString();
-        
+        if (countElement) {
+            countElement.textContent = data.visit_count.toLocaleString();
+        }
+
     } catch (error) {
         console.error('Error tracking visit:', error);
-        countElement.textContent = '???';
+        if (countElement) {
+            countElement.textContent = '???';
+        }
     }
 }
 

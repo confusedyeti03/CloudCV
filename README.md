@@ -2,172 +2,130 @@
 
 Personal portfolio website for **Lluís Noval** at [lnoval.dev](https://lnoval.dev).
 
+Fully serverless on AWS. Migrated from EC2 in July 2026 — see [PROGRESS.md](PROGRESS.md)
+for the 8-phase migration history.
+
 ## Architecture
 
-- **Frontend**: Static HTML/CSS/JS (landing page, CV viewer, projects showcase)
-- **Backend**: FastAPI service for multilingual CV API and PDF generation
-- **Infrastructure**: AWS EC2 t4g.nano (ARM64) provisioned via Terraform
-- **Configuration**: Ansible roles for nginx, security, and monitoring
-- **DNS**: Cloudflare (DNS-only mode)
-- **SSL**: Let's Encrypt certificates via Certbot (auto-renewal)
+```
+Cloudflare DNS (CNAME) → CloudFront (ACM TLS)
+                             │
+              ┌──────────────┴──────────────┐
+              │                             │
+     S3 website endpoint            API Gateway (/api/*)
+     (HTML/CSS/JS/PDFs)                     │
+                              ┌─────────────┼─────────────┐
+                         cv_handler   visit_counter  projects_handler
+                              └──────── DynamoDB ─────────┘
+                                 (visits, cv_cache, projects_cache)
+```
+
+- **Frontend**: Static HTML/CSS/JS on S3, served worldwide via CloudFront
+- **API**: CloudFront proxies `/api/*` to API Gateway → Lambda (Python 3.11)
+- **Database**: DynamoDB pay-per-request (visit counter, caches)
+- **DNS**: Cloudflare (DNS-only mode), TLS via ACM
+- **Audit**: CloudTrail + CloudWatch dashboard and alarms
+- **IaC**: Terraform (remote state in S3)
 
 ## Project Structure
 
 ```
 CloudCV/
-├── web/                    # Static frontend
+├── web/                    # Static frontend (deployed to S3)
 │   ├── index.html          # Landing page
-│   ├── cv/                 # CV viewer (CA/ES/EN)
-│   └── portfolio/          # AWS projects portfolio
-├── cv-service/             # FastAPI backend
-│   ├── app.py              # API endpoints
-│   └── data/               # CV data (YAML)
+│   ├── cv/                 # CV page with embedded PDF viewer (CA/ES/EN)
+│   ├── portfolio/          # AWS projects portfolio
+│   ├── scripts/            # Shared JS (visit counter)
+│   └── styles/             # Shared CSS
+├── cv/
+│   ├── data/               # CV source data (YAML, single source of truth)
+│   └── cv_*.pdf            # Generated PDFs (uploaded to S3)
+├── lambda/                 # Lambda function sources (Python 3.11)
+│   ├── cv_handler/         # GET /cv/{language}
+│   ├── visit_counter/      # POST /visits
+│   └── projects_handler/   # GET /projects
 ├── terraform/              # Infrastructure as Code
-│   ├── ec2.tf              # EC2 instance
-│   ├── vpc.tf              # VPC, subnet, gateway
-│   ├── security_groups.tf  # Firewall rules
-│   ├── iam.tf              # IAM roles and policies
-│   ├── cloudwatch.tf       # Log groups and alarms
-│   ├── ebs_snapshots.tf    # DLM backup policy
-│   └── dns.tf              # Cloudflare DNS records
-├── ansible/                # Configuration management
-│   ├── playbooks/site.yml  # Main playbook
-│   ├── roles/              # Modular roles
-│   └── inventory/          # Host configuration
-└── scripts/                # Utility scripts
+│   ├── cloudfront.tf       # CDN, cache policies, /api/* proxy
+│   ├── s3.tf               # Assets bucket (website endpoint)
+│   ├── lambda.tf           # Functions + IAM
+│   ├── dynamodb.tf         # Tables + TTL
+│   ├── api-gateway.tf      # HTTP API + routes
+│   ├── security.tf         # CloudTrail, KMS
+│   ├── acm.tf              # TLS certificates
+│   ├── dns.tf              # Cloudflare records
+│   ├── dashboard.tf        # CloudWatch dashboard
+│   └── budget.tf           # Monthly cost alert
+└── scripts/
+    ├── generate_pdfs.py        # Regenerate CV PDFs from YAML
+    ├── build-lambda-zips.ps1   # Package Lambda functions
+    └── upload-assets-to-s3.ps1 # Deploy web assets
 ```
 
 ## Prerequisites
 
 - AWS CLI configured with credentials
 - Terraform >= 1.0
-- Ansible >= 2.12
+- Python 3.11+ (PDF generation: `pip install reportlab pyyaml`)
 - Cloudflare API token with DNS edit permissions
-- SSH key pair in AWS (default: `vockey`)
 
 ## Deployment
 
-### 1. Bootstrap Terraform State (First Time Only)
+### 1. Infrastructure
 
-```bash
-cd terraform/state-bootstrap
-terraform init
-terraform apply
-```
-
-This creates the S3 bucket and DynamoDB table for remote state.
-
-### 2. Configure Terraform Variables
-
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-cp backend.tf.example backend.tf
-```
-
-Edit `terraform.tfvars`:
-```hcl
-cloudflare_api_token = "your-api-token"
-cloudflare_zone_id   = "your-zone-id"
-admin_email          = "admin@lnoval.dev"
-ssh_key_name         = "your-key-name"
-```
-
-### 3. Deploy Infrastructure
-
-```bash
+```powershell
 cd terraform
 terraform init
 terraform plan
 terraform apply
 ```
 
-### 4. Update Ansible Inventory
+Required variables in `terraform.tfvars`: `cloudflare_api_token`,
+`cloudflare_zone_id`, `admin_email`.
 
-```bash
-./scripts/update-inventory.sh
+### 2. Web assets
+
+```powershell
+aws s3 sync web/ s3://<assets-bucket>/ --region eu-west-1
+aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 ```
 
-Or manually edit `ansible/inventory/hosts.yml` with the Elastic IP.
+Bucket and distribution ID come from `terraform output`.
 
-### 5. Run Ansible Playbook
+### 3. CV PDFs (when the YAML data changes)
 
-```bash
-cd ansible
-ansible-playbook playbooks/site.yml
+```powershell
+python scripts/generate_pdfs.py
+aws s3 cp cv/ s3://<assets-bucket>/cv/ --recursive --exclude "*" --include "*.pdf"
 ```
 
-For specific tasks:
-```bash
-# Deploy only
-ansible-playbook playbooks/site.yml --tags "deploy"
+### 4. Lambda changes
 
-# Skip WAF (Anubis)
-ansible-playbook playbooks/site.yml --skip-tags "anubis"
-
-# Monitoring only
-ansible-playbook playbooks/site.yml --tags "cloudwatch"
+```powershell
+./scripts/build-lambda-zips.ps1
+cd terraform
+terraform apply
 ```
 
 ## Monitoring
 
-### CloudWatch Log Groups
-- `/aws/lnoval-cv/nginx/access` - 3 day retention
-- `/aws/lnoval-cv/nginx/error` - 14 day retention
-- `/aws/lnoval-cv/app` - 7 day retention
-- `/aws/lnoval-cv/system` - 7 day retention
-
-### CloudWatch Alarms
-- CPU utilization > 80%
-- Memory usage > 85%
-- Disk usage > 80%
-- Instance status check failures
-
-### EBS Snapshots
-- Daily at 03:00 UTC
-- Retained for 7 days
-- Managed by AWS DLM
-
-## Security Features
-
-- UFW firewall (ports 80, 443, 2222)
-- Fail2ban for SSH and nginx protection
-- SSH hardening (key-only, custom port)
-- IMDSv2 required on EC2
-- SSM Session Manager access (no bastion needed)
-- Let's Encrypt SSL with auto-renewal
-- HSTS, CSP, and other security headers
+- CloudWatch dashboard `example-cloudcv-serverless`: Lambda, API Gateway,
+  DynamoDB and CloudFront metrics
+- Alarms: Lambda errors/throttles, DynamoDB throttling
+- Budget alert: email when monthly cost exceeds 80% of $6
 
 ## URLs
 
 - **Landing**: https://lnoval.dev
-- **CV Viewer**: https://lnoval.dev/cv/
-- **Projects**: https://lnoval.dev/portfolio/
-- **Health Check**: https://lnoval.dev/api/health
-
-## Development
-
-### Local Frontend
-```bash
-cd web
-python -m http.server 8000
-```
-
-### Local Backend
-```bash
-cd cv-service
-pip install -r requirements.txt
-uvicorn app:app --reload
-```
+- **CV**: https://lnoval.dev/cv/
+- **Portfolio**: https://lnoval.dev/portfolio/
+- **API (via CloudFront)**: https://lnoval.dev/api/visits
 
 ## Cost
 
-Targeting ~$8 USD/month on AWS:
+~$1.50 USD/month (81% less than the previous EC2 setup at $8.05/month):
 
 | Resource | ~Cost |
 | --- | --- |
-| EC2 t4g.nano (ARM64) | ~$3.50/mo |
-| Elastic IP (IPv4) | ~$3.60/mo |
-| EBS 8 GB gp3 | ~$0.65/mo |
-| Data transfer | ~$0.10/mo |
-| Cloudflare DNS | Free |
+| KMS customer-managed key | $1.00/mo |
+| S3 + CloudFront + Lambda + DynamoDB + API Gateway | ~$0.50/mo (mostly free tier) |
+| Cloudflare DNS, ACM, CloudTrail (first trail) | Free |
