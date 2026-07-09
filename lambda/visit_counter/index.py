@@ -5,7 +5,7 @@ from datetime import datetime
 
 dynamodb = boto3.resource('dynamodb')
 
-visits_table = dynamodb.Table(os.environ.get('DDB_VISITS_TABLE', 'lnoval-cv-visits'))
+visits_table = dynamodb.Table(os.environ.get('DDB_VISITS_TABLE', 'example-cloudcv-visits'))
 api_key = os.environ.get('API_KEY', '')
 
 # Sort key reserved for the per-page aggregate counter item.

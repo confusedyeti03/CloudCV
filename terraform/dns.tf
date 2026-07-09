@@ -40,19 +40,6 @@ resource "cloudflare_record" "caa" {
   ttl = 3600
 }
 
-# Secondary CAA record - Allow Let's Encrypt (not used, but for compatibility)
-resource "cloudflare_record" "caa_letsencrypt" {
-  zone_id = var.cloudflare_zone_id
-  name    = "@"
-  type    = "CAA"
-  data {
-    flags = 0
-    tag   = "issue"
-    value = "letsencrypt.org;AccountUri=https://acme-v02.api.letsencrypt.org/acme/acct/12345678"
-  }
-  ttl = 3600
-}
-
 # SPF record - domain sends no email, reject all
 resource "cloudflare_record" "spf" {
   zone_id = var.cloudflare_zone_id

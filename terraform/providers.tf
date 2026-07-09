@@ -12,13 +12,7 @@ terraform {
     }
   }
 
-  # backend "s3" {
-  #   bucket       = "lnoval-terraform-state"
-  #   key          = "portfolio/terraform.tfstate"
-  #   region       = "eu-west-1"
-  #   use_lockfile = true
-  #   encrypt      = true
-  # }
+  # Remote state backend is configured in backend.tf
 }
 
 provider "aws" {

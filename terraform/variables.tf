@@ -10,7 +10,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Project name used for resource naming"
   type        = string
-  default     = "lnoval-cv"
+  default     = "example-cloudcv"
 }
 
 variable "domain" {
@@ -38,7 +38,7 @@ variable "cloudflare_zone_id" {
 variable "monthly_budget" {
   description = "Monthly budget alert threshold in USD (alert at 80%)"
   type        = number
-  default     = 6
+  default     = 3
 }
 
 variable "api_key" {

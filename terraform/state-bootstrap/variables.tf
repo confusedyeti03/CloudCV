@@ -11,5 +11,5 @@ variable "aws_region" {
 variable "state_bucket_name" {
   description = "Name of the S3 bucket for Terraform state"
   type        = string
-  default     = "lnoval-terraform-state"
+  default     = "example-cloudcv-tfstate-002645520899"
 }

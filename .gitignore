@@ -13,6 +13,7 @@ override.tf.json
 *_override.tf.json
 *.tfplan
 *.tfplan.*
+tfplan*
 
 # ==============================
 # Lambda / AWS

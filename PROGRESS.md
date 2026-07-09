@@ -122,6 +122,26 @@ Remaining protections: HTTPS-only, API Gateway throttling, budget alert.
   duplicate achievement card in the portfolio (also unified absolute
   asset paths)
 
+## Final review fixes (2026-07-09)
+
+- **Terraform state migrated to S3**: bootstrap applied (bucket
+  `example-cloudcv-tfstate-002645520899`, versioned + encrypted),
+  `backend.tf` created, `terraform init -migrate-state` done — state
+  no longer lives only on one disk
+- **Stale content fixed**: CloudCV card in projects.json now describes
+  the serverless architecture (~$1.5/mo); home deploy badge no longer
+  mentions Ansible; generate_pdfs.py help no longer suggests a removed
+  API endpoint
+- **Coherent naming**: `project_name` default is `example-cloudcv`
+  everywhere (variables.tf, Lambda fallback); dead EC2 vars removed
+  from terraform.tfvars
+- **Portfolio now tracks visits** (loads visits.js) and shows the
+  Credly badge "AWS Microcredential: Serverless Demonstrated" linking
+  to its verification page
+- **Misc**: Let's Encrypt CAA record removed from dns.tf, budget
+  lowered to $3/month, upload script uploads HTML with no-cache,
+  FASE*.md moved to docs/ as historical documentation
+
 ---
 
 ## Architecture (current)

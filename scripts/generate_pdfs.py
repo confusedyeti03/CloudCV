@@ -196,11 +196,10 @@ def main():
     if success_count == len(LANGUAGES):
         print()
         print("Next steps:")
-        print(f"  1. Upload PDFs to S3:")
         S3_BUCKET = "example-cloudcv-assets-002645520899"
-        print(f"     aws s3 cp cv/ s3://{S3_BUCKET}/cv/ --recursive")
+        print(f"  1. Upload PDFs to S3:")
+        print(f"     aws s3 cp web/cv/ s3://{S3_BUCKET}/cv/ --recursive --exclude '*' --include '*.pdf'")
         print(f"  2. Verify upload: aws s3 ls s3://{S3_BUCKET}/cv/")
-        print(f"  3. Test endpoint: curl -L 'https://34mr1zrah7.execute-api.eu-west-1.amazonaws.com/prod/cv/en/pdf'")
         return 0
     else:
         return 1
