@@ -36,6 +36,13 @@ resource "aws_apigatewayv2_stage" "api_stage" {
   name        = "prod"
   auto_deploy = true
 
+  # Throttling: the endpoint is public (no auth), so cap request rates
+  # to limit Lambda/DynamoDB cost abuse
+  default_route_settings {
+    throttling_rate_limit  = 5  # requests per second (steady state)
+    throttling_burst_limit = 10 # short bursts
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
     format = jsonencode({
@@ -54,16 +61,13 @@ resource "aws_apigatewayv2_route" "visits_post" {
   route_key          = "POST /visits"
   authorization_type = "NONE"
   target             = "integrations/${aws_apigatewayv2_integration.visit_counter.id}"
-
-  # Note: API key validation is handled by visit_counter Lambda
-  # Expects X-API-Key header or Authorization: Bearer <key>
 }
 
 # Integration: Lambda for /visits
 resource "aws_apigatewayv2_integration" "visit_counter" {
-  api_id             = aws_apigatewayv2_api.cv_api.id
-  integration_type   = "AWS_PROXY"
-  integration_uri    = aws_lambda_function.visit_counter.invoke_arn
+  api_id                 = aws_apigatewayv2_api.cv_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.visit_counter.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -75,5 +79,5 @@ output "api_endpoint" {
 
 output "api_invoke_url" {
   description = "Full API invoke URL"
-  value       = "${aws_apigatewayv2_stage.api_stage.invoke_url}"
+  value       = aws_apigatewayv2_stage.api_stage.invoke_url
 }

@@ -7,19 +7,19 @@
 # - TTL enabled for any future per-visit items
 
 resource "aws_dynamodb_table" "visits" {
-  name           = "${var.project_name}-visits"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "page_id"
-  range_key      = "timestamp"
+  name         = "${var.project_name}-visits"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "page_id"
+  range_key    = "timestamp"
 
   attribute {
     name = "page_id"
-    type = "S"  # String
+    type = "S" # String
   }
 
   attribute {
     name = "timestamp"
-    type = "N"  # Number (unix timestamp)
+    type = "N" # Number (unix timestamp)
   }
 
   ttl {
@@ -47,6 +47,7 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttle_visits" {
   threshold           = 0
   alarm_description   = "Alert when DynamoDB visits table is throttled"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     TableName = aws_dynamodb_table.visits.name
@@ -65,6 +66,7 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_user_errors" {
   threshold           = 5
   alarm_description   = "Alert when DynamoDB user errors exceed 5"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     TableName = aws_dynamodb_table.visits.name

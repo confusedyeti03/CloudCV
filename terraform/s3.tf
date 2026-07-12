@@ -6,7 +6,7 @@
 # - Images (WebP optimized)
 # - Assets (badges, certificates, photos)
 #
-# Access: PUBLIC READ (served via CloudFront from the S3 website endpoint)
+# Access: PRIVATE - only CloudFront can read, via Origin Access Control (OAC)
 # Versioning: Enabled (allow rollback)
 # Encryption: AES-256 (default, AWS managed)
 
@@ -29,14 +29,14 @@ resource "aws_s3_bucket_versioning" "assets" {
   }
 }
 
-# Allow public read access (for S3 website endpoint used by CloudFront)
+# Block ALL public access - content is served exclusively through CloudFront (OAC)
 resource "aws_s3_bucket_public_access_block" "assets" {
   bucket = aws_s3_bucket.assets.id
 
-  block_public_acls       = false
-  block_public_policy     = false
+  block_public_acls       = true
+  block_public_policy     = true
   ignore_public_acls      = true
-  restrict_public_buckets = false
+  restrict_public_buckets = true
 }
 
 # Enable server-side encryption with AES-256 (default AWS managed key)
@@ -78,7 +78,9 @@ resource "aws_s3_bucket_cors_configuration" "assets" {
   }
 }
 
-# S3 bucket policy: Allow public read access (used by CloudFront website endpoint)
+# S3 bucket policy: only this CloudFront distribution can read (via OAC).
+# s3:ListBucket lets S3 answer missing keys with a real 404 (NoSuchKey)
+# instead of 403, so CloudFront can map it to the 404.html error page.
 resource "aws_s3_bucket_policy" "assets" {
   bucket = aws_s3_bucket.assets.id
 
@@ -86,29 +88,35 @@ resource "aws_s3_bucket_policy" "assets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "PublicReadGetObject"
+        Sid    = "AllowCloudFrontOACRead"
         Effect = "Allow"
-        Principal = "*"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
         Action   = ["s3:GetObject"]
         Resource = "${aws_s3_bucket.assets.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.static.arn
+          }
+        }
+      },
+      {
+        Sid    = "AllowCloudFrontOACList"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = ["s3:ListBucket"]
+        Resource = aws_s3_bucket.assets.arn
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.static.arn
+          }
+        }
       }
     ]
   })
-}
-
-# S3 Website Configuration - enables directory index serving
-# When user requests /cv/, S3 automatically serves /cv/index.html
-# Missing keys return 404.html with a real 404 status (no soft-404)
-resource "aws_s3_bucket_website_configuration" "assets" {
-  bucket = aws_s3_bucket.assets.id
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "404.html"
-  }
 }
 
 # Output bucket name for use in other resources

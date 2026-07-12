@@ -43,10 +43,15 @@ terraform apply tfplan5b
 ```
 
 ### Step 3: Configure API Key Validation
-```bash
-# Update Lambda environment variables with API key
-terraform apply -var="api_key=your-secret-key"
-```
+> **Retired (security audit 2026-07):** the `api_key` variable was removed.
+> Abuse control for `POST /visits` is now enforced with API Gateway
+> throttling (see `api-gateway.tf`). If a secret is ever needed, never pass
+> it inline with `-var="...=secret"` (it stays in shell history); use an
+> environment variable or a var-file outside the repo instead:
+> ```bash
+> export TF_VAR_my_secret="$(cat ~/.secrets/my_secret)"
+> terraform apply
+> ```
 
 ### Step 4: Enable CloudTrail
 ```bash

@@ -25,17 +25,12 @@ resource "aws_cloudfront_distribution" "static" {
   price_class         = "PriceClass_100" # US, Europe, Asia (best price/coverage balance)
 
   origin {
-    # Use S3 website endpoint to enable directory index serving (/cv/ → /cv/index.html)
-    domain_name = "${aws_s3_bucket.assets.id}.s3-website-${var.aws_region}.amazonaws.com"
-    origin_id   = "S3Assets"
-
-    # Website endpoint uses HTTP (CloudFront handles HTTPS)
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
+    # S3 REST endpoint, private bucket accessed via Origin Access Control (OAC).
+    # Directory indexes (/cv/ → /cv/index.html) are resolved by the
+    # index_rewrite viewer-request function.
+    domain_name              = aws_s3_bucket.assets.bucket_regional_domain_name
+    origin_id                = "S3Assets"
+    origin_access_control_id = aws_cloudfront_origin_access_control.s3_assets.id
   }
 
   origin {
@@ -54,8 +49,8 @@ resource "aws_cloudfront_distribution" "static" {
 
   default_cache_behavior {
     target_origin_id = "S3Assets"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.static.id
 
@@ -64,6 +59,11 @@ resource "aws_cloudfront_distribution" "static" {
 
     # Compress response automatically (Gzip, Brotli)
     compress = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.index_rewrite.arn
+    }
   }
 
   # API behavior: proxy /api/* to API Gateway (dynamic, never cached)
@@ -91,9 +91,9 @@ resource "aws_cloudfront_distribution" "static" {
   # This ensures new deployments are immediately visible
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="/index.html"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "/index.html"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.no_cache.id
 
@@ -104,35 +104,45 @@ resource "aws_cloudfront_distribution" "static" {
   # Cache behavior for CV pages (no cache)
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="/cv/*"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "/cv/*"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.no_cache.id
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.index_rewrite.arn
+    }
   }
 
   # Cache behavior for portfolio pages (short cache)
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="/portfolio/*"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "/portfolio/*"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.short_cache.id
 
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.index_rewrite.arn
+    }
   }
 
   # Cache behavior for static assets: CSS, JS, images (long cache)
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="/assets/*"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "/assets/*"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -142,9 +152,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="/styles/*"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "/styles/*"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -154,9 +164,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="*.css"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "*.css"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -166,9 +176,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="*.js"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "*.js"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -178,9 +188,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="*.png"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "*.png"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -190,9 +200,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="*.jpg"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "*.jpg"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -202,9 +212,9 @@ resource "aws_cloudfront_distribution" "static" {
 
   ordered_cache_behavior {
     target_origin_id = "S3Assets"
-    path_pattern ="*.webp"
-    allowed_methods = ["GET", "HEAD"]
-    cached_methods  = ["GET", "HEAD"]
+    path_pattern     = "*.webp"
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
 
     cache_policy_id = aws_cloudfront_cache_policy.long_cache.id
 
@@ -228,6 +238,21 @@ resource "aws_cloudfront_distribution" "static" {
     }
   }
 
+  # Serve 404.html with a real 404 status for missing keys.
+  # S3 returns 404 (NoSuchKey) thanks to s3:ListBucket in the bucket policy;
+  # 403 is mapped too as a safety net (e.g. permission misconfiguration).
+  custom_error_response {
+    error_code         = 404
+    response_code      = 404
+    response_page_path = "/404.html"
+  }
+
+  custom_error_response {
+    error_code         = 403
+    response_code      = 404
+    response_page_path = "/404.html"
+  }
+
   # CloudFront logging (deferred to FASE 6 - requires ACL configuration)
   # logging_config {
   #   include_cookies = false
@@ -247,11 +272,11 @@ resource "aws_cloudfront_distribution" "static" {
 # Cache policy for static assets (1 day TTL)
 # Long cache for CSS, JS, images that change infrequently
 resource "aws_cloudfront_cache_policy" "long_cache" {
-  name            = "${var.project_name}-long-cache"
-  comment         = "1 day cache for static assets"
-  default_ttl     = 86400  # 1 day
-  max_ttl         = 86400  # 1 day
-  min_ttl         = 0
+  name        = "${var.project_name}-long-cache"
+  comment     = "1 day cache for static assets"
+  default_ttl = 86400 # 1 day
+  max_ttl     = 86400 # 1 day
+  min_ttl     = 0
 
   parameters_in_cache_key_and_forwarded_to_origin {
     headers_config {
@@ -269,11 +294,11 @@ resource "aws_cloudfront_cache_policy" "long_cache" {
 # Cache policy for content that should be cached for shorter periods
 # (portfolio, project pages that might change weekly)
 resource "aws_cloudfront_cache_policy" "short_cache" {
-  name            = "${var.project_name}-short-cache"
-  comment         = "1 hour cache for dynamic content"
-  default_ttl     = 3600   # 1 hour
-  max_ttl         = 3600   # 1 hour
-  min_ttl         = 0
+  name        = "${var.project_name}-short-cache"
+  comment     = "1 hour cache for dynamic content"
+  default_ttl = 3600 # 1 hour
+  max_ttl     = 3600 # 1 hour
+  min_ttl     = 0
 
   parameters_in_cache_key_and_forwarded_to_origin {
     headers_config {
@@ -291,11 +316,11 @@ resource "aws_cloudfront_cache_policy" "short_cache" {
 # Cache policy for static content (no cache)
 # For index.html, CV pages (always fetch fresh from S3)
 resource "aws_cloudfront_cache_policy" "no_cache" {
-  name            = "${var.project_name}-no-cache"
-  comment         = "No cache for HTML pages (always fresh)"
-  default_ttl     = 0
-  max_ttl         = 0
-  min_ttl         = 0
+  name        = "${var.project_name}-no-cache"
+  comment     = "No cache for HTML pages (always fresh)"
+  default_ttl = 0
+  max_ttl     = 0
+  min_ttl     = 0
 
   parameters_in_cache_key_and_forwarded_to_origin {
     headers_config {
@@ -313,11 +338,11 @@ resource "aws_cloudfront_cache_policy" "no_cache" {
 # Cache policy for general static content (default)
 # Medium cache strategy
 resource "aws_cloudfront_cache_policy" "static" {
-  name            = "${var.project_name}-static-cache"
-  comment         = "Default cache policy for static content"
-  default_ttl     = 3600   # 1 hour
-  max_ttl         = 86400  # 1 day
-  min_ttl         = 0
+  name        = "${var.project_name}-static-cache"
+  comment     = "Default cache policy for static content"
+  default_ttl = 3600  # 1 hour
+  max_ttl     = 86400 # 1 day
+  min_ttl     = 0
 
   parameters_in_cache_key_and_forwarded_to_origin {
     headers_config {
@@ -330,6 +355,42 @@ resource "aws_cloudfront_cache_policy" "static" {
       cookie_behavior = "none"
     }
   }
+}
+
+# Origin Access Control: lets CloudFront sign requests (SigV4) to the
+# private S3 bucket. Replaces the public website endpoint.
+resource "aws_cloudfront_origin_access_control" "s3_assets" {
+  name                              = "${var.project_name}-s3-assets-oac"
+  description                       = "OAC for CloudCV assets bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront Function: resolve directory indexes, replacing the behavior of
+# the retired S3 website endpoint:
+#   /cv/  -> /cv/index.html (rewrite)
+#   /cv   -> 301 to /cv/    (same redirect the website endpoint issued)
+resource "aws_cloudfront_function" "index_rewrite" {
+  name    = "${var.project_name}-index-rewrite"
+  runtime = "cloudfront-js-1.0"
+  publish = true
+  code    = <<-EOT
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+    if (uri.endsWith('/')) {
+        request.uri = uri + 'index.html';
+    } else if (uri.indexOf('.') === -1) {
+        return {
+            statusCode: 301,
+            statusDescription: 'Moved Permanently',
+            headers: { location: { value: uri + '/' } }
+        };
+    }
+    return request;
+}
+EOT
 }
 
 # CloudFront Function: strip the /api prefix before forwarding to API Gateway

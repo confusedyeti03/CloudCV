@@ -35,7 +35,7 @@ resource "cloudflare_record" "caa" {
   data {
     flags = 0
     tag   = "issue"
-    value = "amazon.com"  # AWS Certificate Manager
+    value = "amazon.com" # AWS Certificate Manager
   }
   ttl = 3600
 }

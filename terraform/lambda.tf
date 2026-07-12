@@ -31,8 +31,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 # Custom policy: DynamoDB write access to the visits table (least privilege)
 resource "aws_iam_role_policy" "lambda_dynamodb_policy" {
-  name   = "${var.project_name}-lambda-dynamodb-policy"
-  role   = aws_iam_role.lambda_execution_role.id
+  name = "${var.project_name}-lambda-dynamodb-policy"
+  role = aws_iam_role.lambda_execution_role.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -56,8 +56,8 @@ resource "aws_lambda_function" "visit_counter" {
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "index.handler"
   runtime       = "python3.11"
-  timeout       = 5  # 5 seconds (quick operation)
-  memory_size   = 128  # 128 MB RAM (minimal)
+  timeout       = 5   # 5 seconds (quick operation)
+  memory_size   = 128 # 128 MB RAM (minimal)
 
   environment {
     variables = {
@@ -98,9 +98,10 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   namespace           = "AWS/Lambda"
   period              = 60
   statistic           = "Sum"
-  threshold           = 5  # Alert if >5 errors per minute
+  threshold           = 5 # Alert if >5 errors per minute
   alarm_description   = "Alert when Lambda functions have errors"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     FunctionName = aws_lambda_function.visit_counter.function_name
@@ -115,9 +116,10 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
   namespace           = "AWS/Lambda"
   period              = 60
   statistic           = "Sum"
-  threshold           = 0  # Alert on any throttle
+  threshold           = 0 # Alert on any throttle
   alarm_description   = "Alert when Lambda functions are throttled"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     FunctionName = aws_lambda_function.visit_counter.function_name
@@ -125,12 +127,13 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
 }
 
 # Lambda permission for API Gateway invocation
+# Scoped to this API's POST /visits route (any stage), not the whole account
 resource "aws_lambda_permission" "visit_apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.visit_counter.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "arn:aws:execute-api:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*/*"
+  source_arn    = "${aws_apigatewayv2_api.cv_api.execution_arn}/*/POST/visits"
 }
 
 output "lambda_visit_counter_invoke_arn" {

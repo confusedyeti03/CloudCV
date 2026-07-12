@@ -6,7 +6,6 @@ from datetime import datetime
 dynamodb = boto3.resource('dynamodb')
 
 visits_table = dynamodb.Table(os.environ.get('DDB_VISITS_TABLE', 'example-cloudcv-visits'))
-api_key = os.environ.get('API_KEY', '')
 
 # Sort key reserved for the per-page aggregate counter item.
 # It has no TTL so the accumulated count never expires.
@@ -17,38 +16,17 @@ def handler(event, context):
     """
     Lambda handler for visit tracking
     POST /visits
-    Headers: Authorization: Bearer <api-key> OR X-API-Key: <api-key>
     Body: { "page_id": "home" }
     Returns the accumulated visit_count for the page.
+    Abuse control is handled by API Gateway throttling (see api-gateway.tf).
+    No client IP or User-Agent is stored (GDPR: avoid retaining personal data).
     """
     try:
-        # FASE 5: Validate API key (skipped when API_KEY is not configured)
-        headers = event.get('headers', {}) or {}
-        auth_header = headers.get('authorization', '') or headers.get('Authorization', '')
-        api_key_header = headers.get('x-api-key', '') or headers.get('X-API-Key', '')
-
-        provided_key = None
-        if auth_header.startswith('Bearer '):
-            provided_key = auth_header[7:]
-        elif api_key_header:
-            provided_key = api_key_header
-
-        if api_key and provided_key != api_key:
-            print("Unauthorized visit tracking attempt")
-            return {
-                'statusCode': 401,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Unauthorized. Invalid or missing API key.'})
-            }
-
         # Parse request body
         body_str = event.get('body') or '{}'
         body = json.loads(body_str) if isinstance(body_str, str) else body_str
 
         page_id = body.get('page_id', 'unknown')
-        user_agent = headers.get('user-agent', 'unknown')
-        # HTTP API payload v2 exposes the client IP under requestContext.http
-        source_ip = event.get('requestContext', {}).get('http', {}).get('sourceIp', 'unknown')
 
         # Increment the aggregate counter for this page (atomic ADD)
         response = visits_table.update_item(
@@ -56,12 +34,10 @@ def handler(event, context):
                 'page_id': page_id,
                 'timestamp': COUNTER_SORT_KEY
             },
-            UpdateExpression='ADD visit_count :inc SET last_visit_at = :now, last_user_agent = :ua, last_source_ip = :ip',
+            UpdateExpression='ADD visit_count :inc SET last_visit_at = :now',
             ExpressionAttributeValues={
                 ':inc': 1,
-                ':now': datetime.utcnow().isoformat(),
-                ':ua': user_agent,
-                ':ip': source_ip
+                ':now': datetime.utcnow().isoformat()
             },
             ReturnValues='UPDATED_NEW'
         )
